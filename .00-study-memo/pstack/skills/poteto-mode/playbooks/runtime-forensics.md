@@ -1,11 +1,11 @@
-### Runtime forensics
+### 実行中プロセスの原因調査
 
-**You own the diagnosis. Instrument the live process, don't theorize from source.** The deliverable is a cited diagnosis, not a fix.
+**診断に責任を持つ。ソースから推測するのではなく、実行中のプロセスを計測する。** 成果物は根拠を引用した診断であり、修正ではない。
 
-1. Capture the live signal on the matching surface via the control skill: a CPU profile for a spinning process, a heap snapshot for a leak, a CDP trace for a visual glitch. A real artifact, not a guess.
-2. Reduce the artifact to the smoking gun: the function on the hot path, the retainer chain from the leaked object to a GC root, the loop firing without input. Parse large artifacts in a subagent (the **guard-the-context-window** principle skill), keep the reduced finding in the main thread.
-3. Prove the mechanism before believing it. Inject instrumentation via CDP eval on the running process, or hotfix the live code without reloading, to confirm the hypothesis cheaply.
-4. Map the finding back to source: file, symbol, the line that allocates or schedules.
-5. Throughput checkpoint stays one line: `throughput checkpoint: n/a, read-only forensics`.
+1. 操作用スキルで、対象に合った操作面から実行中の兆候を記録する。CLI/TUI には `run`、UI には `verify` を使う。空回りするプロセスには CPU プロファイル、メモリリークにはヒープスナップショット、表示の不具合には CDP トレースを取得する。推測ではなく、実際の記録を得る。
+2. 記録を絞り込み、決定的な箇所を見つける。負荷の集中する実行経路の関数、リークしたオブジェクトから GC ルートに至る保持参照の連鎖、入力なしに発火するループなどである。大きな記録はサブエージェントで解析し、絞り込んだ結果だけをメインスレッドに残す。**guard-the-context-window** 原則スキルに従う。
+3. 仕組みを信じる前に実証する。実行中のプロセスに CDP eval で計測を注入するか、再読み込みせず実行中のコードを一時修正して、仮説を低コストで確認する。
+4. 結果をソースに対応づける。ファイル、シンボル、割り当てやスケジューリングを行う行を特定する。
+5. 作業の分担と順序のチェックポイントは、`throughput checkpoint: n/a, read-only forensics` の 1 行にする。
 
-**Reply:** the signal captured, the reduced finding, how you proved the mechanism, the source location, artifact paths. No fix unless asked. Hand back to Bug fix or Perf once the cause is known.
+**返信に含める内容：** 記録した兆候、絞り込んだ結果、仕組みの実証方法、ソースの場所、記録ファイルのパス。依頼がなければ修正しない。原因が分かったら、バグ修正または性能問題へ引き継ぐ。

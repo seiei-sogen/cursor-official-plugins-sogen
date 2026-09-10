@@ -1,21 +1,21 @@
-### Feature
+### 機能追加
 
-**You own the design. Plan, review, verify.** Delegate implementation. Stay in the lead.
+**設計に責任を持つ。計画し、レビューし、検証する。** 実装を委任し、自分は指揮を続ける。
 
-1. `how` over the affected subsystem.
-2. `architect` for parallel design exploration. Skipping stays as `architect skipped: <reason>`. Do not fold the design decision silently into implementation.
-3. Write the throughput checkpoint as four todo items. A dimension that genuinely does not apply (single file, no fan-out) keeps its item with `n/a: <reason>` rather than being dropped:
-   - **Blocking first steps.** Gates run before fan-out.
-   - **Independent workstreams.** Disjoint files, services, or layers parallelize. Shared writes serialize.
-   - **Shared mutable state.** Default to splitting the target (the **separate-before-serializing-shared-state** principle skill). Serialize only for real invariants.
-   - **Smallest safe decomposition.** If one worker is best, name why.
-4. Delegate code-writing to a subagent using your configured feature model (default `grok-4.6-fast-xhigh`) with a specific scope (file paths, named data shape and its organizing structure per **principle-model-the-domain**, a state machine over scattered booleans, a table/registry over branching, a typed model over repeated shape assumptions, chosen before the delegate writes logic, and success criteria). Review its diff yourself. When the implementation admits multiple valid shapes (error handling, abstraction layer, test structure), delegate via the **arena** skill instead so the runners surface the alternatives and the cross-judge guards the pick. Mandatory: no skip-with-reason escape, and Laziness Protocol does not override it (the gain is review separation, not lines saved). You can spawn a subagent even though you are one. "The app is small" and "a subagent cannot spawn one" are both wrong. A subagent forbidden to spawn satisfies this by owning the diff directly with the same review separation. No "standing by" reply that waits on a nested agent. Comments per **Comments**. Surgical edits, re-ground against the source for upstream-derived files. Port shared-primitive improvements to all consumers and verify each. Commit liberally.
-5. Verify on the matching surface. "Inconclusive" or wrong-surface is not a pass. Flag it.
-6. Rebase into small, ordered commits. Stack follow-ups.
-   Use the **sequence-verifiable-units** principle skill, building, verifying, and committing each small unit before the next.
-7. If the design is contested, `interrogate` before shipping.
-8. Run **Opening a PR**.
+1. 対象サブシステムに対して `how` を使う。
+2. `architect` で設計を並列に検討する。省略する場合も `architect skipped: <reason>` を残す。設計判断を黙って実装に紛れ込ませない。
+3. 作業の分担と順序を確認するチェックポイントを、4 つの TODO 項目として書く。単一ファイル、並列展開なしなど、本当に該当しない観点も削除せず `n/a: <reason>` を残す。
+   - **先に済ませる前提作業。** 並列展開の前に必須チェックを実行する。
+   - **独立した作業。** ファイル、サービス、層が重ならなければ並列化する。共有先への書き込みは直列化する。
+   - **共有される可変状態。** まず対象の分離を選ぶ。**separate-before-serializing-shared-state** 原則スキルに従う。実際の不変条件が要求する場合だけ直列化する。
+   - **安全を保てる最小の分割。** 作業者 1 人が最適なら、その理由を示す。
+4. 設定済みの feature 記述子、既定値は `grok:grok-4.6@xhigh`、を使い、provider dispatch 経由でコード作成を委任する。`isolated-write`、専用 worktree、具体的な作業範囲を指定する。範囲には、ファイルパス、**principle-model-the-domain** に基づくデータの形とそれをまとめる構造、成功条件を含める。委任先がロジックを書く前に、散在する真偽値の代わりに状態機械、分岐の代わりにテーブルやレジストリ、繰り返すデータ形状の仮定の代わりに型付きモデルを選ぶ。差分は自分でレビューする。エラー処理、抽象化層、テスト構造など、妥当な実装形態が複数ある場合は、**arena** スキル経由で委任する。実行者に代案を出させ、交差評価で選択を検証する。これは必須であり、理由を書いて省略することはできない。狙いは行数の削減ではなくレビューの分離なので、「怠惰の原則」で上書きすることもできない。委任先は差分に直接責任を持ち、入れ子のエージェントを起動したり、その完了を待ったりしない。コメントは「コメント」に従う。変更は必要箇所に絞り、上流由来のファイルは元のソースと照合し直す。共有する基本機能の改善はすべての利用側へ移植し、それぞれ検証する。こまめにコミットする。
+5. 対象に合った操作面で検証する。「結論が出ない」結果や別の操作面での結果は合格ではない。その旨を明示する。
+6. rebase で、小さく順序の整ったコミットにまとめる。後続の変更は積み重ねる。
+   **sequence-verifiable-units** 原則スキルに従い、小さな単位ごとに実装、検証、コミットを終えてから次へ進む。
+7. 設計に異論があるなら、出荷前に `interrogate` を使う。
+8. **PR の作成**を実行する。
 
-Code-coupled work (one feature, one migration) goes to a single owner with the checkpoint inline. That owner fans out internally after the blocking phase. Parent-level fan-out is for slices that produce independent artifacts (audits, cross-subsystem investigations, competing experiments). Rewrite the checkpoint at phase boundaries. Spawn a fresh owner rather than chaining interrupts.
+1 つの機能や移行のようにコードが密接に結びつく作業は、チェックポイントを依頼に含めて 1 人の担当者に渡す。その担当者が前提作業を終えた後、内部で並列展開する。親が行う並列展開は、監査、サブシステム横断調査、競合する実験など、独立した成果物を生む作業に限る。フェーズの境目でチェックポイントを書き直す。割り込みを連鎖させず、新しい担当者を起動する。
 
-**Reply:** what you built, what you chose and why, the throughput checkpoint, open decisions. Tables for design alternatives.
+**返信に含める内容：** 作ったもの、選択とその理由、作業の分担と順序のチェックポイント、未決事項。設計案の比較には表を使う。

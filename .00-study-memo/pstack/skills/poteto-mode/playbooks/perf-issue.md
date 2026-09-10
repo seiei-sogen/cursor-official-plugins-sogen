@@ -1,24 +1,24 @@
-### Perf issue
+### 性能問題
 
-**You own the measurement story. Plan, review, verify the numbers.** Tie every fix to a measurement, don't read source instead of measuring.
+**計測の説明に責任を持つ。計画し、レビューし、数値を検証する。** すべての修正を計測に結びつける。計測の代わりにソースを読むだけで済ませない。
 
-1. Capture a baseline trace via the matching control skill.
-2. `how` to ground hypotheses. Don't claim a perf ceiling without running it first.
-   Most fixes come from eight strategy families. Use them as hypothesis generators, not a checklist. A family earns an attempt only when the trace shows the signal it names.
-   - **Elimination.** Before optimizing the hot path, ask whether it needs to exist: a computation nobody consumes, a feature gate that's always off for this user, a sync that redundantly mirrors state, a legacy path kept "just in case". The trace shows what's slow, never that it's deletable, so this family needs the `how` pass, not the profiler.
-   - **Divide and conquer.** The dominant cost scales with input size. Split the work so each piece touches less (chunk, shard, prune the search space) or so independent pieces run in parallel.
-   - **Caching.** The same computation or fetch repeats on identical inputs. Store and reuse the result. Name what invalidates it before claiming the win.
-   - **Indirection.** The hot path does expensive work a cheaper intermediate could absorb: an index instead of a scan, a queue that shifts work off the interactive thread, a handle that lets a cheaper implementation swap in. Add the hop only when it removes more from the critical path than it adds.
-   - **Batching.** Many small operations each pay a fixed overhead (RPC, query, syscall, draw call). Coalesce them to pay the overhead once per batch.
-   - **Redundancy.** The wait hangs on one slow instance or attempt. Duplicate the work (replicas, hedged requests, speculative execution) and take the fastest result. The trace has to show the wait dominates and the system has headroom.
-   - **Lazy evaluation.** Cost lands on results that are never used or not needed yet (eager init on the boot path, rendering offscreen items). Defer the work until first use.
-   - **Scheduling.** The work must happen, but not during the interactive moment. Move it to where nobody is waiting: idle callbacks, a background warmup after boot, precompute before the user arrives, cleanup after the frame commits. The win is perceived latency, so measure the interactive path, not total work done.
-3. Plan the fix from the trace. If it crosses a function boundary, `architect` first. Delegate implementation to a subagent using your configured perf-issue model (default `claude-fable-5-1-thinking-max`). Review the diff. Capture a post-fix trace.
-   Apply the **sequence-verifiable-units** principle skill, verifying each attempt before trying the next.
-4. Parse and compare the artifacts (JSON to sqlite, diff). "Inconclusive" or wrong-surface is not a pass. Flag it.
-5. Cite the measurement in the PR.
-6. Run **Opening a PR**.
+1. 操作用スキルで基準となるトレースを取得する。CLI/TUI には `run`、UI には `verify` を使う。
+2. `how` で仮説の根拠を固める。実行する前に性能の限界を断言しない。
+   修正の多くは次の 8 系統に属する。チェックリストではなく、仮説を生む材料として使う。各系統を試すのは、その系統に対応する兆候がトレースに現れた場合だけにする。
+   - **除去。** 頻繁に通る経路を最適化する前に、その処理が必要かを問う。誰も使わない計算結果、そのユーザーでは常に無効な機能フラグ、状態を重複して写す同期、「念のため」に残した古い経路などが該当する。トレースが示すのは遅さであり、削除可能かどうかではない。この系統にはプロファイラーではなく `how` による確認が必要である。
+   - **分割統治。** 主なコストが入力サイズに応じて増える場合に使う。チャンク化、シャーディング、探索範囲の枝刈りなどで各処理が触る範囲を減らすか、独立した部分を並列実行できるよう分割する。
+   - **キャッシュ。** 同じ入力に対して同じ計算や取得が繰り返される場合に、結果を保存して再利用する。改善を主張する前に、何がキャッシュを無効化するかを示す。
+   - **間接化。** 頻繁に通る経路の高コストな処理を、より安価な中間手段で肩代わりする。走査の代わりのインデックス、操作を処理するスレッドから仕事を移すキュー、安価な実装へ差し替えるためのハンドルなどである。追加するコストよりも、クリティカルパスから除けるコストのほうが大きい場合だけ段階を増やす。
+   - **一括処理。** RPC、クエリ、システムコール、描画呼び出しなど、多数の小さな操作に固定コストがかかる場合にまとめる。固定コストをバッチごとに 1 回だけ払う。
+   - **冗長化。** 1 つの遅いインスタンスや試行が待ち時間を支配する場合に、レプリカ、ヘッジリクエスト、投機実行などで処理を複製し、最速の結果を採用する。待機が支配的であり、システムに余力があることをトレースで示す必要がある。
+   - **遅延評価。** 起動経路での先行初期化や画面外項目の描画など、使われない結果やまだ不要な結果にコストを払っている場合に、初めて使うまで処理を遅らせる。
+   - **スケジューリング。** 必要な処理でも、ユーザーが操作する瞬間に実行する必要がなければ、誰も待っていない時間へ移す。アイドル時のコールバック、起動後のバックグラウンド準備、ユーザーが来る前の事前計算、フレーム確定後の後片づけなどである。改善対象は体感待ち時間なので、総処理量ではなく操作中の経路を測る。
+3. トレースから修正を計画する。関数の境界をまたぐなら、先に `architect` を使う。設定済みの perf-issue 記述子、既定値は `codex:gpt-5.6-sol@max`、を使い、provider dispatch 経由で実装を委任する。専用 worktree で `isolated-write` を指定する。差分をレビューし、修正後のトレースを取得する。
+   **sequence-verifiable-units** 原則スキルを適用し、各試行を検証してから次を試す。
+4. 記録を解析して比較する。JSON を sqlite に取り込み、差分を調べる。「結論が出ない」結果や別の操作面での結果は合格ではない。その旨を明示する。
+5. PR に計測結果を引用する。
+6. **PR の作成**を実行する。
 
-For sustained improvement against a metric rather than a one-off fix, use the Hillclimb playbook (`playbooks/hillclimb.md`).
+単発の修正ではなく、指標に対して改善を継続する場合は、継続的な指標改善の手順書 `playbooks/hillclimb.md` を使う。
 
-**Reply:** baseline number, post-fix number, delta, artifact path.
+**返信に含める内容：** 基準値、修正後の値、差、記録ファイルのパス。

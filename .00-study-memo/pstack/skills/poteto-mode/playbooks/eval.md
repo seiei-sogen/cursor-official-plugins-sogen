@@ -1,25 +1,25 @@
-### Eval
+### 評価実験
 
-**You own the experiment design. Plan, blind, run, synthesize.**
+**実験設計に責任を持つ。計画し、評価条件を伏せ、実行し、結果をまとめる。**
 
-**Non-negotiables for blinding:**
+**ブラインド化の必須事項：**
 
-- No `eval`, `test`, `judge`, `experiment`, `rubric`, `score`, `compare`, `benchmark`, `candidate`, or `arena` in any directory, file, or prompt the candidate sees.
-- The candidate prompt looks like an organic user request. State the goal, not the meta.
-- No chain-eliciting cues. Don't ask the candidate to list which skills, principles, or files they applied. Ask for design notes generally and grade chain-following from code shape, not self-report.
-- Sanitize directory and slug names. Use project-shaped names a user might pick.
-- Don't tell the candidate other candidates exist.
-- The judge can know it's judging but sees outputs by sanitized label only, never by model name.
-- Comparing two variants: one judge scores both sets in a single pass on one scale, blind to which set each came from.
+- 候補エージェントから見えるディレクトリ、ファイル、プロンプトに、`eval`、`test`、`judge`、`experiment`、`rubric`、`score`、`compare`、`benchmark`、`candidate`、`arena` を含めない。
+- 候補へのプロンプトは、通常のユーザー依頼に見えるものにする。評価の背景ではなく、達成する目的を示す。
+- 指示の連鎖を誘導する手がかりを与えない。適用したスキル、原則、ファイルの列挙を候補に求めない。設計上の補足を一般的な形で求め、指示の連鎖に従ったかは自己申告ではなくコードの構造で評価する。
+- ディレクトリ名とスラッグから評価を連想させる情報を取り除く。ユーザーが選びそうなプロジェクト名を使う。
+- 他の候補が存在することを候補に知らせない。
+- 評価者は評価中だと知っていてよいが、出力は情報を伏せたラベルだけで見る。モデル名は見せない。
+- 2 つの変種を比較する場合は、1 人の評価者が同じ尺度で両方の出力群を一度に採点する。どちらの変種の出力かは伏せる。
 
-**Steps:**
+**手順：**
 
-1. **Frame.** State what variant is under test and what behavior counts as success. Write the rubric (3-6 concrete criteria) for the judge only. Hold it back from candidates.
-2. **Set up sanitized environments.** Per-candidate working dir with the variant in place. Plant any context an organic task would have: a project skeleton, the skills the candidate would naturally read.
-3. **Author one organic prompt.** What a user would type. No leakage of what's being measured.
-4. **Spawn N parallel candidates** on different models per the **arena** skill's Phase B. Each works in its own sanitized dir. Same prompt to each.
-5. **Spawn one blinded judge** on a different model family per the **arena** skill's Phase C. Judge sees outputs by sanitized label and the rubric, never a model name.
-6. **Verify the chain from transcripts, not self-report.** Read each candidate's local transcript under the active workspace's `agent-transcripts/` directory (the system prompt names this path). Do not glob across `~/.cursor/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects. Look at which files each candidate actually opened. Grade chain-following from the files it really read plus the shape of the code, never from the candidate's own claims.
-7. **Read every candidate output yourself** end to end. Compare to the judge's verdict. Disagreement means a model is biased or the rubric is ambiguous. Synthesize.
+1. **枠組みを決める。** 試す変種と、成功とみなす挙動を示す。評価者だけに渡す採点基準を、具体的な 3〜6 項目で書く。候補には見せない。
+2. **評価情報を伏せた環境を用意する。** 候補ごとに作業ディレクトリを用意し、変種を配置する。プロジェクトの骨組みや、候補が自然に読むスキルなど、通常のタスクにある文脈を置く。
+3. **自然な依頼を 1 つ書く。** ユーザーが実際に入力しそうなプロンプトにする。測定対象を漏らさない。
+4. **N 個の候補を異なるモデルで並列起動する。** **arena** スキルのフェーズ B に従う。各候補は情報を伏せた専用ディレクトリで作業する。全員に同じプロンプトを渡す。
+5. **情報を伏せた評価者を 1 人起動する。** **arena** スキルのフェーズ C に従い、別のモデル系列を使う。評価者が見るのは、情報を伏せたラベル付きの出力と採点基準であり、モデル名ではない。
+6. **自己申告ではなく会話記録で指示の連鎖を確認する。** Claude Code のプロジェクト別会話記録ディレクトリ `~/.claude/projects/<encoded-cwd>/` にある、各候補のローカル記録を読む。このワークスペースではセッションごとに 1 つの `*.jsonl` がある。`~/.claude/projects/` 全体に glob をかけない。ワークスペースの境界を越え、無関係なプロジェクトの私的な会話を読むことになる。各候補が実際に開いたファイルを確認する。指示の連鎖に従ったかは、本当に読んだファイルとコードの構造から評価し、候補自身の主張には頼らない。
+7. **すべての候補の出力を自分で最初から最後まで読む。** 評価者の判定と比較する。不一致があれば、モデルに偏りがあるか、採点基準が曖昧である。結果をまとめる。
 
-**Reply:** variant under test, rubric, per-candidate notes, judge's verdict, your synthesis, and a recommendation for whether to promote the variant.
+**返信に含める内容：** 試した変種、採点基準、候補ごとの所見、評価者の判定、自分の総合判断、変種を採用すべきかの推奨。

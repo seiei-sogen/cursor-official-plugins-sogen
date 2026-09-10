@@ -1,13 +1,13 @@
-### Autonomous run
+### 自律実行
 
-**You own the exit condition. Define done, then drive to it without stopping.**
+**終了条件に責任を持つ。完了を定義し、そこに到達するまで止まらず進める。**
 
-1. State the exit condition as a checkable predicate before the first iteration (tests green, repro fixed, all N PRs merged, pixel-diff zero).
-2. Pick the wake mechanism using Cursor's `/loop` command (a built-in, not a pstack skill). An event to watch (CI, a merge, a ref advancing) gets a watcher subagent that wakes you on the event, with a long time-based heartbeat as fallback. No event gets a fixed-interval heartbeat sized to when the result is worth re-checking.
-3. Each iteration makes the smallest change the evidence justifies, verifies it against the predicate, commits if it advanced, discards changes that didn't help. Belt-and-suspenders that "might help" gets reverted, not left to ride.
-   Sequence the work via the **sequence-verifiable-units** principle skill, verifying each unit before the next instead of batching checks at the end.
-4. Mid-run discoveries are yours. Address broken skills, related bugs, flaky verifiers, review noise, tooling failures, orphaned follow-ups, and fixable drift yourself via poteto-mode. Put out-of-band fixes in their own PR. Do not park reversible work for the human or use `AskQuestion`. Surface only irreversible actions, genuine product or preference calls no experiment can settle, or a real dead end. Keep the predicate as the main drive, and return to it after each side fix.
-5. Checkpoint every iteration via the **show-me-your-work** skill, a row for what changed and whether the predicate moved.
-6. Stop when the predicate is met. A plateau is not a stop, so keep going and pivot your approach to push past it. Surface a genuine dead end rather than spinning, and never relax the predicate to declare victory.
+1. 最初の反復の前に、終了条件を確認可能な述語として示す。たとえば、テストがすべて成功する、再現した不具合が直る、N 件の PR がすべてマージされる、画像のピクセル差分がゼロになる、といった条件にする。
+2. Claude Code 組み込みの `loop` スキルで再開の仕組みを選ぶ。CI、マージ、参照先の更新など監視するイベントがある場合は、そのイベントで親を起こす監視用サブエージェントを使い、長い間隔の定期起動を予備として設ける。イベントがない場合は、結果を再確認する価値が出る間隔で定期起動する。
+3. 各反復では、証拠が裏づける最小の変更を行い、終了条件に照らして検証する。前進したらコミットし、役立たなかった変更は破棄する。「役立つかもしれない」という念のための対策は残さず戻す。
+   **sequence-verifiable-units** 原則スキルに従って作業を順序づける。最後にまとめて確認するのではなく、各単位を検証してから次へ進む。
+4. 実行中に見つかった問題も自分が引き受ける。壊れたスキル、関連するバグ、不安定な検証、不要なレビュー指摘、ツールの故障、放置された後続作業、修正可能な方針や状態のずれは、poteto-mode を通じて自分で対処する。本筋から外れる修正は別の PR にする。元に戻せる作業を人間待ちにせず、`AskUserQuestion` も使わない。人間に持ち出すのは、取り消せない操作、実験では決められない製品上の判断や好み、本当に打つ手がない状況だけにする。終了条件を主軸に保ち、脇の修正を終えるたびにそこへ戻る。
+5. **show-me-your-work** スキルで反復ごとに記録を残す。何を変えたか、終了条件に近づいたかを 1 行に記す。
+6. 終了条件を満たしたら止める。停滞は停止理由にならない。方針を変えながら継続し、突破を目指す。本当に行き詰まったら、同じことを繰り返さず報告する。成功を宣言するために終了条件を緩めてはならない。
 
-**Reply:** the exit condition, iterations run, what landed, what was discarded, final predicate state.
+**返信に含める内容：** 終了条件、実行した反復回数、取り込まれた変更、破棄した変更、終了条件の最終状態。

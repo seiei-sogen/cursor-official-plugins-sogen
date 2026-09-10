@@ -1,156 +1,158 @@
-### Multi-phase or multi-PR plan
+### 複数フェーズ・複数 PR の計画
 
-**You own the plan, not the code. The plan is a checklist an owner runs box by box and the operator audits from the evidence.** The plan is the deliverable. Do not implement.
+**コードではなく計画に責任を持つ。計画は、担当者が 1 項目ずつ実行し、操作者が証拠から監査できるチェックリストである。** 成果物は計画である。実装してはならない。
 
-1. When the change is one or two files with an obvious approach, skip the plan. Say so and stop.
-2. Settle open questions by prototype before you write. Run `playbooks/prototype.md` for each. Keep the branch, the SHA, and the screenshots for Appendix A. Ask the operator only about a product or preference call that no run can settle. Give options (the **never-block-on-the-human** principle skill).
-3. Explore in subagents with `subagent_type: "poteto-agent"` and an explicit model per the Subagents section (the **guard-the-context-window** principle skill). Each returns file pointers, conventions, test commands, and entry points. No inlined dumps.
-4. Copy the skeleton below into the plan file and fill every placeholder. Unless the operator names a path, write the file under the agent store's `docs/`. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one change with its own evidence (the **sequence-verifiable-units** principle skill). Name the execution playbook in **How to read this**. Pick between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` per the rule at the end of `playbooks/autopilot-stack.md`. A standing program takes `playbooks/orchestrate.md`.
-5. Write under `/technical-writing` in full, then `/unslop`. The body is one Diátaxis mode, how-to. Appendices hold explanation and reference. Each heading states the task or the finding. No long dashes. No mid-sentence colons.
-6. Run `node pstack/skills/poteto-mode/scripts/check-plan.mjs <plan.md>` and fix every line it prints (the **encode-lessons-in-structure** principle skill).
-7. Hand back. Post the plan path and the script's output, then stop. Execution starts on the operator's explicit go, under the execution playbook the plan names.
+1. 変更が 1〜2 ファイルで方式が明らかなら、計画を省略する。その旨を述べて止まる。
+2. 書く前に、未決事項を試作で解決する。各事項に `playbooks/prototype.md` を使う。付録 A のために、ブランチ、SHA、スクリーンショットを残す。操作者に尋ねるのは、実行しても決まらない製品上の判断や好みだけにし、選択肢を示す。**never-block-on-the-human** 原則スキルに従う。
+3. サブエージェントで調査する。設定済みの `judgment and prose` の役割を、[`../references/provider-dispatch.md`](../references/provider-dispatch.md) 経由で解決する。`poteto-agent` は、プロバイダーを明示しない `inherit-parent` / `auto` のネイティブ補助役にだけ使う。Claude Code 組み込みの `Plan` エージェントは、このスキルを無視するため使わない。**guard-the-context-window** 原則スキルに従う。各調査担当は、ファイル参照、慣例、テストコマンド、入口を返す。大量の内容を直接貼らない。子は親の実行環境を検出せず、経路も選ばない。選択した推論強度を保つ。脱落は脱落のまま記録し、代替経路や暗黙のタイムアウトを追加しない。
+4. 以下のひな形を計画ファイルへコピーし、すべてのプレースホルダーを埋める。操作者がパスを指定しなければ、作業リポジトリの `docs/` に書く。すべての見出しと下位ブロックを、示した順序のまま保つ。PR ごとに 1 節とする。1 PR は固有の証拠を持つ 1 つの変更である。**sequence-verifiable-units** 原則スキルに従う。**この計画の読み方**に実行用の手順書を示す。`playbooks/autopilot-stack.md` 末尾の規則に従い、`playbooks/autopilot-full.md` と `playbooks/autopilot-stack.md` のどちらかを選ぶ。常設の活動には `playbooks/orchestrate.md` を使う。
+5. `/technical-writing` を全面適用して書き、その後 `/unslop` を適用する。本文の Diátaxis の形式はハウツー 1 つに統一し、付録に解説と参照情報を置く。各見出しは作業または発見内容を示す。長いダッシュを使わず、文中の接続にコロンを使わない。
+6. インストール済みプラグインで `node skills/poteto-mode/scripts/check-plan.mjs <plan.md>` を実行し、出力されたすべての行を修正する。**encode-lessons-in-structure** 原則スキルに従う。この検査は、ひな形の構造、各検証ブロックの検証規則、句読点の規則を強制する。手順書ファイルを検査入力にしてはならない。手順 4 で作成した計画ファイルを検査する。
+7. 結果を返す。計画のパスとスクリプトの出力を示し、止まる。実行は操作者の明示的な開始指示を受けてから、計画で指定した実行手順書に従って始める。
 
-**Verification.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked (the **prove-it-works** principle skill). That sentence is the verification rule. Every verification block opens with it. The live block is mandatory. Ten lanes on `grok-4.6-fast-xhigh` at the PR head drive the real surface through its control skill, per the **swarm** skill. Each lane is one box with a concrete scenario, the screenshot it saves, and its pass predicate. One lane is the **Regression lane against trunk.** It runs the same load-bearing scenario on trunk and head. If trunk does not have the feature, the lane records that fact and gates the behavior the diff adds plus the end state the user waits for instead of inventing a trunk result. The perf gate is dual-sided. Trunk and head must both produce the named metric. If trunk lacks the feature, also isolate the work the diff adds and set an absolute budget for that work plus the end-to-end state the user waits for. Do not claim a ratio between unlike scenarios. The perf block names the metric, the interleaved probe, the trunk baseline measured first, and the rule with the number that fails. A PR that changes an interaction is review-gated. The operator reviews it in chat with screenshots and a video before merge. A PR that changes no interaction writes `**Review gate.** None. <PR id> is not review-gated.` and no boxes under it.
+**検証。** テストだけでは検証として不十分である。単体、実機動作、性能の確認欄がすべてチェックされて初めて、PR は検証済みとなる。**prove-it-works** 原則スキルに従う。この文を検証規則とし、すべての検証ブロックの冒頭に置く。実機動作のブロックは必須である。設定済みの `swarm workers` の役割を使う 10 作業枠が、PR の head で、**swarm** スキルに従い、操作用スキルから実際の操作面を動かす。この役割は実行時に [`../references/provider-dispatch.md`](../references/provider-dispatch.md) で 1 回だけ解決し、各作業枠の証跡に選択したプロバイダー、モデル、推論強度を記録する。1 作業枠を 1 確認欄とし、具体的なシナリオ、保存するスクリーンショット、合格条件を示す。1 枠は**trunk と比較するリグレッション検証**にする。同じ重要なシナリオを trunk と head で実行する。trunk に機能がなければ、その事実を記録し、trunk の結果を捏造せず、差分が追加する挙動とユーザーが待つ最終状態を検証する。性能チェックは両側で行い、trunk と head がともに指定指標を出せなければならない。trunk に機能がなければ、差分が追加する処理も分離し、その処理とユーザーが待つ一連の最終状態に絶対的な予算を設定する。異なるシナリオ間で比率を主張しない。性能ブロックには、指標、交互実行する計測、先に測る trunk の基準値、失敗とする数値付きの規則を示す。操作方法を変える PR にはレビュー条件を設ける。マージ前に、操作者がチャットでスクリーンショットと動画を見てレビューする。操作方法を変えない PR には `**Review gate.** None. <PR id> is not review-gated.` と書き、その下に確認欄を置かない。
 
-**Control skill.** Pick it by surface. Browser, Electron, and web UIs use `control-ui` from `cursor-team-kit`. CLIs and TUIs use `control-cli` from `cursor-team-kit`. Native mobile uses whatever simulator-driving skill the repo has. A PR that touches two surfaces gets lanes on both. A surface with no control skill is a risk in Appendix C, and its live block still names how each lane drives it.
+**操作用スキル。** 操作面で選ぶ。ブラウザー、Electron、Web UI には Claude Code の **verify** スキルを使う。CLI と TUI には Claude Code の **run** スキルを使う。ネイティブモバイルには、そのリポジトリにあるシミュレーター操作スキルを使う。Codex では [`../references/codex-tools.md`](../references/codex-tools.md) に従って置き換える。2 つの操作面に触れる PR は、両方に作業枠を設ける。操作用スキルのない操作面は付録 C のリスクに記し、それでも実機動作ブロックには各作業枠の操作方法を示す。
+
+Claude Code では、30 分ごとの監査を dynamic モードの実際の `/loop` として設定する。Codex では [`../references/codex-tools.md`](../references/codex-tools.md) に従って定期実行を設定する。定期実行を記憶任せにしない。スキルを基準とする相対リンクは、この手順書の本文にとどめ、計画ファイルへコピーしない。
 
 ````markdown
-# <Program> plan
+# <Program> の計画
 
-<Under ten lines. What changes, for whom, the rule the program enforces, and the PR ids in order.>
+<10 行未満。誰に何が変わるか、活動が強制する規則、PR ID を順に示す。>
 
-## How to read this
+## この計画の読み方
 
-One box is one unit of work. Every box names the evidence that checks it. A nested box is a sub-step of the box above it. Check a box only when its evidence exists, a file, a log line, a screenshot, a test run, or a SHA. The body is a how-to. The appendices explain and record.
+1 つの確認欄が 1 単位の作業である。各欄には、チェックを付ける根拠を示す。入れ子の確認欄は、上の欄の下位手順である。ファイル、ログ行、スクリーンショット、テスト実行、SHA などの証拠が存在する場合だけチェックする。本文は実行手順を示し、付録は説明と記録を担う。
 
-The program runs `pstack/skills/poteto-mode/playbooks/<execution playbook>.md`. <Who merges, and which PR ids are the operator's items that stop at merge-ready.>
+この活動は、インストール済みプラグインの `skills/poteto-mode/playbooks/<execution playbook>.md` を実行する。<誰がマージするか、操作者が担当しマージ可能状態で止める PR ID はどれか。>
 
-Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+テストだけでは検証として不十分である。単体、実機動作、性能の確認欄がすべてチェックされて初めて、PR は検証済みとなる。
 
-## Program checklist
+## 活動全体のチェックリスト
 
-### Arm the program
+### 活動を開始できる状態にする
 
-- [ ] State the protocol and this plan to the operator, then stop. Start execution only on her explicit go.
-- [ ] On her go, arm a `/goal` with this exact text. "<The plan path, the PR ids in order, the verification rule, who merges, and the done condition.>"
-- [ ] Read these from trunk at program start. Re-read them at every tick.
-  - [ ] `git show origin/main:pstack/skills/poteto-mode/playbooks/<execution playbook>.md`
-  - [ ] `git show origin/main:pstack/skills/swarm/SKILL.md`
-  - [ ] `git show origin/main:<control skill path>`
-  - [ ] `git show origin/main:pstack/skills/poteto-mode/playbooks/opening-a-pr.md`
-  - [ ] `git show origin/main:pstack/skills/<each other leaf skill the program uses>`
-- [ ] Arm the 30-minute audit tick. In a local session, a real terminal `/loop`. In a cloud root, a cloud-sleeper wake chain. Never leave the cadence to memory.
-- [ ] Use this tick prompt, verbatim. "Re-read the execution playbook from trunk and the armed /goal. Audit the operation against both and fix drift in this tick. Probe every active lane and judge progress by side effects only. Stand down a stuck lane and dispatch its replacement now. Then send the operator a status message, whether or not anything changed, with the queue table of PR, owner, state, and head SHA, the verdicts since the last tick, what merged, open operator gates, and blockers."
-- [ ] On the operator's hold or stand-down, send every owner a zero-writes order at once.
+- [ ] 手順の取り決めとこの計画を操作者に説明して止まる。操作者の明示的な開始指示を受けてから実行する。
+- [ ] 開始指示を受けたら、活動の目的を継続指示と自分の TODO リストに、次の文面どおりに書く。「<計画のパス、順序付きの PR ID、検証規則、マージ担当者、完了条件。>」
+- [ ] 活動開始時に、インストール済みプラグインから次を読む。監査のたびに読み直す。
+  - [ ] `skills/poteto-mode/playbooks/<execution playbook>.md`
+  - [ ] `skills/swarm/SKILL.md`
+  - [ ] `<driver skill path>`
+  - [ ] `skills/poteto-mode/playbooks/opening-a-pr.md`
+  - [ ] `skills/<each other leaf skill the program uses>/SKILL.md`
+- [ ] 30 分ごとの監査を、実際の定期実行として設定する。記憶任せにしない。
+- [ ] 次の監査プロンプトをそのまま使う。「インストール済みプラグインの実行手順書と継続指示を読み直す。両方に照らして運用を監査し、今回の監査中にずれを直す。稼働中の全作業枠を確認し、進捗は実際に生じた変化だけで判断する。明確な失敗の証拠がある場合だけ作業枠を停止し、同じ監査中に代わりを起動する。その後、変化の有無にかかわらず操作者へ状況を送る。PR、担当者、状態、head SHA のキュー表、前回監査以降の判定、マージされたもの、操作者の未完了判断、阻害要因を含める。」
+- [ ] 操作者が保留や停止を指示したら、すべての担当者へ直ちに書き込み禁止を伝える。
 
-### Spawn owners
+### 担当者を起動する
 
-- [ ] Spawn one owner per PR with the full lifecycle the execution playbook names.
-- [ ] Follow this dependency graph. Start dependent work only after its parent merges, or base it on the parent branch when the execution playbook stacks.
-  - [ ] <PR id> and <PR id> are independent and first. Both branch from `main`.
-  - [ ] <PR id> after <PR id>.
-- [ ] Hold the file boundaries. <PR id or class> touches only `<glob>`.
-- [ ] Hold the review gate. <PR ids> change an interaction. They wait for the operator's review in chat with screenshots and a video before merge.
+- [ ] PR ごとに 1 人の担当者を起動し、実行手順書が定めるライフサイクル全体を任せる。
+- [ ] 次の依存関係に従う。依存する作業は親のマージ後に開始する。実行手順書がスタックを使う場合は、ブランチを親の正確な先端へ rebase する。同一リポジトリの子 PR は親ブランチを対象とする。フォークの子 PR はローカルの親子関係を保ちつつ trunk を対象とする。フォーク PR のベースは順序を表さないため、下から上の順序を固定する。
+  - [ ] <PR id> と <PR id> は独立しており、最初に行う。両方とも `main` から分岐する。
+  - [ ] <PR id> は <PR id> の後に行う。
+- [ ] ファイルの境界を守る。<PR id または分類> が触るのは `<glob>` だけである。
+- [ ] レビュー条件を守る。<PR ids> は操作方法を変更する。マージ前に、操作者がチャットでスクリーンショットと動画を見てレビューするまで待つ。
 
-### PR mechanics, for every PR
+### すべての PR に共通する操作
 
-- [ ] Resolve the forge once. Default to `gh`; if `command -v origin` succeeds and Origin can resolve the repository, use `origin pr` for every PR operation. Record any fallback to `gh`. Never require `gt`.
-- [ ] Open the PR ready, never draft, with `origin pr create --status open --base <base-branch>` or `gh pr create --base <base-branch>` according to the resolved forge. A stack child targets its parent branch.
-- [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
-- [ ] Run `/deslop` before each commit and `/no-comments` before review.
-- [ ] Triage every Bugbot and security-reviewer comment per `../references/bugbot-triage.md`.
-- [ ] Rebase onto current trunk before babysit and again before the merge-ready report.
+- [ ] 使用するホスティングサービスを 1 回だけ解決する。既定は `gh` とし、`command -v origin` が成功して Origin がリポジトリを解決できれば、すべての PR 操作に `origin pr` を使う。`gh` へ切り替えた場合は記録する。意図した PR ベースリポジトリを正規の `<base-repo>` として記録し、使用中のサービスで検証する。チェックアウトの既定リモートから推測しない。シェル変数に取得し、すべての `gh pr` コマンドに `--repo "$base_repo"` を渡す。「出荷」の手順 1 で `<head-url>` を解決、検証し、実機検証枠での fetch のために `head_url` に取得する。head リポジトリがフォークなら実体を検証し、所有者とリポジトリ名を `<fork-owner>` と `<head-name>` として記録する。`gt` を必須にしない。
+- [ ] 自己検証の前に PR を開き、`skills/poteto-mode/playbooks/opening-a-pr.md` の準備状態の規則に従う。既定ではレビュー可能で開く。リポジトリの指示が指定の証拠があるまでドラフトを要求する場合は、記録するまでドラフトに保つ。同一リポジトリのレビュー可能な PR には `origin pr create --status open --base "$base_branch"` または `gh pr create --base "$base_branch" --repo "$base_repo"` を使う。同一リポジトリのスタックの子は親ブランチを対象とする。フォークの PR はすべて trunk を対象とする。GitHub では承認済みタイトルと本文を `<title>` と `<body>` に取得し、`gh api --method POST "repos/$base_repo/pulls" -f "title=$title" -f "body=$body" -f "head=$fork_owner:$branch" -f "head_repo=$head_name" -f "base=$trunk" --jq .html_url` で作成する。リポジトリの指示がドラフトを要求する場合は `-F draft=true` を追加する。それ以外では解決した Origin コマンドを使う。積み重ねたフォークのブランチはローカルの親子関係を保つ。
+- [ ] PR に反映する push の前に、リポジトリの lint と型チェックを 1 回実行する。フックを有効にして push する。
+- [ ] コミットごとに `/deslop`、レビュー前に `/no-comments` を実行する。
+- [ ] Bugbot とセキュリティレビュー担当の全コメントを、インストール済みプラグインの `skills/poteto-mode/references/bugbot-triage.md` に従って分類する。
+- [ ] 見守り前に、独立した各 PR とスタック最下段を現在の trunk へ rebase する。未マージの各子を親の正確な先端へ rebase する。親のマージ後は、子のマージ可能報告の前に、「出荷」の明示的な旧ベースから trunk への rebase を使う。
 
-### Verdict and merge, for every PR
+### すべての PR の判定とマージ
 
-- [ ] At the merge-ready head SHA, run the swarm per `pstack/skills/swarm/SKILL.md`. One gates lane. The ten live lanes from the PR's **Verify, live** block. The perf lane from its **Verify, perf** block. One audit lane that reads the diff and the receipts and distrusts the PR body.
-- [ ] Clean only when every lane is `PASS`. Findings go back to the owner. A new head gets a fresh swarm and a fresh verdict.
-- [ ] <The merge or append rule from the execution playbook, with the patch-id rule from `playbooks/shipping.md`.>
+- [ ] マージ可能な head SHA で、`skills/swarm/SKILL.md` に従って swarm を実行する。必須チェック用の 1 枠、PR の**実機動作の検証**ブロックの 10 枠、**性能の検証**ブロックの性能枠、差分と証跡を読み PR 本文をうのみにしない監査用の 1 枠を設ける。
+- [ ] 全作業枠が `PASS` の場合だけ問題なしとする。指摘は担当者へ戻す。新しい head には新しい swarm と新しい判定が必要である。
+- [ ] <実行手順書のマージまたは末尾追加の規則。判定 SHA、現在の取り込み SHA、記録済みパッチベース、`skills/poteto-mode/playbooks/shipping.md` のパッチ ID 規則を含める。>
 
-### Boot recipe, for every live lane
+### すべての実機検証枠の起動手順
 
-Each live lane runs on its own cloud VM at the PR head. Drive through `control-ui` or `control-cli` from `cursor-team-kit`.
+各実機検証枠は、PR の head に対する `swarm workers` の 1 作業枠であり、provider dispatch で解決する。専用 worktree または出力ディレクトリと、固有の証跡を持つ。操作面は、この計画が指定する操作用スキルだけで動かす。
 
-- [ ] `git fetch origin <head-branch> && git checkout <head SHA>`.
-- [ ] <Start the backend and the surface. Wait for ready.>
-- [ ] <Deliver input only through the control skill's commands. Name the read-only diagnostics.>
-- [ ] Save every screenshot to `/tmp/swarm-<pr-id>/worker-<n>/<slug>.png` and return the paths with the report.
+- [ ] 作業枠の worktree で `git fetch -- "$head_url" "refs/heads/$head_branch" && git checkout --detach "$head_sha"` を実行する。
+- [ ] <バックエンドと操作面を起動し、準備完了を待つ。>
+- [ ] <入力は操作用スキルのコマンドだけで送る。読み取り専用の診断手段を示す。>
+- [ ] すべてのスクリーンショットを `<scratch path>/swarm-<pr-id>/worker-<n>/<slug>.png` に保存し、証跡のパスと一緒に返す。
 
-## <Task as a verb phrase> (<PR id>)
+## <動詞句で表す作業> (<PR id>)
 
-**Depends on.** <PR id, or None.>
+**依存先。** <PR id、または「なし」。>
 
-**Files.**
+**ファイル。**
 
-- [ ] Edit `<path>`.
-- [ ] Create `<path>`.
-- [ ] Delete `<path>`.
+- [ ] `<path>` を編集する。
+- [ ] `<path>` を作成する。
+- [ ] `<path>` を削除する。
 
-**Build.**
+**実装。**
 
-- [ ] <One change. Name the symbol and the file.>
+- [ ] <変更を 1 つ示し、シンボルとファイルを指定する。>
 
-**You see.**
+**観察できる結果。**
 
-- [ ] <One observable result, with the exact log line or screen state.>
+- [ ] <観測可能な結果を 1 つ示し、正確なログ行や画面状態を書く。>
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**単体の検証。** テストだけでは検証として不十分である。単体、実機動作、性能の確認欄がすべてチェックされて初めて、PR は検証済みとなる。
 
-- [ ] <Test file and the case it gains.> Run `<command>`.
+- [ ] <テストファイルと追加するケース。> `<command>` を実行する。
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.6-fast-xhigh` at the PR head, per the boot recipe.
+**実機動作の検証。** テストだけでは検証として不十分である。単体、実機動作、性能の確認欄がすべてチェックされて初めて、PR は検証済みとなる。起動手順に従い、PR の head で設定済みの `swarm workers` の役割を使う 10 作業枠を実行する。
 
-- [ ] Lane 1. Regression lane against trunk. Run <the same load-bearing scenario> at trunk and head. If trunk lacks the feature, record that and gate <the behavior the diff adds plus the end state the user waits for>. Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 2. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 3. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 4. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 5. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 6. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 7. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 8. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 9. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
-- [ ] Lane 10. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
+- [ ] 作業枠 1。trunk と比較するリグレッション検証。trunk と head で<同じ重要なシナリオ>を実行する。trunk に機能がなければ記録し、<差分が追加する挙動とユーザーが待つ最終状態>を検証する。`<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 2。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 3。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 4。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 5。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 6。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 7。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 8。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 9。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
+- [ ] 作業枠 10。<シナリオ。> `<slug>.png` を保存する。<条件>を満たせば合格。
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**性能の検証。** テストだけでは検証として不十分である。単体、実機動作、性能の確認欄がすべてチェックされて初めて、PR は検証済みとなる。
 
-- [ ] Metric. <What is measured at both trunk and head. If trunk lacks the feature, also name the diff-added work and the end-to-end state the user waits for.>
-- [ ] Probe. <The command or procedure, run at trunk and at the head, interleaved. Both sides must produce the metric.>
-- [ ] Baseline. Record the trunk <value> first.
-- [ ] Rule. <Head against trunk, with the number that fails. If the scenarios differ, add absolute budgets for the diff-added work and the user-visible end state instead of an invalid ratio.>
+- [ ] 指標。<trunk と head の両方で測るもの。trunk に機能がなければ、差分で追加する処理とユーザーが待つ一連の最終状態も示す。>
+- [ ] 計測。<trunk と head で交互に実行するコマンドや手順。両方が指標を出せること。>
+- [ ] 基準値。先に trunk の<値>を記録する。
+- [ ] 規則。<head を trunk と比較し、20 など失敗とする数値を示す。シナリオが異なるなら、不正な比率ではなく、差分で追加する処理とユーザーから見える最終状態に絶対的な予算を付ける。>
 
-**Review gate.** The operator reviews before merge.
+**レビュー条件。** 操作者がマージ前にレビューする。
 
-- [ ] Copy lane <n> screenshots into `<media path>/<pr-id>-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of the change on a lane VM. Save it as `<media path>/<pr-id>-review.mp4`.
-- [ ] Post the screenshots and the video in chat. Stop at merge-ready. Wait for the operator's click.
+- [ ] 作業枠 <n> のスクリーンショットを `<media path>/<pr-id>-review-<slug>.png` にコピーする。
+- [ ] 実機検証枠で変更の 30〜60 秒の動画を録画し、`<media path>/<pr-id>-review.mp4` に保存する。
+- [ ] スクリーンショットと動画をチャットに投稿する。マージ可能状態で止まり、操作者のクリックを待つ。
 
-**Merge.**
+**マージ。**
 
-- [ ] Root's clean verdict at the exact head SHA.
-- [ ] Bugbot triage done.
-- [ ] Rebased onto current trunk after the verdict, patch-id unchanged.
-- [ ] <The owner squash-merges its own PR, or the root appends it to the base-branch stack and the operator lands it bottom-up.>
+- [ ] 正確な head SHA に対し、親が問題なしと判定している。
+- [ ] Bugbot の指摘の振り分けが完了している。
+- [ ] 判定後、担当者がマージする場合は「出荷」の手順 4 で、記録済みのパッチベースから現在の trunk へ PR を移す。スタックへ追加した子は、親が取り込まれるまで記録済みの親の先端を保つ。現在の取り込み SHA を記録する。パッチ ID が変わらない場合だけ判定を維持する。
+- [ ] <担当者が自分の PR を squash マージする、または親が下から上に固定したスタックへ追加し、操作者が順に取り込む。同一リポジトリの子 PR が親ブランチを対象にするのか、フォークの子 PR がローカルの親子関係を保ちつつ trunk を対象にするのかを示す。>
 
-## Close the program
+## 活動を完了する
 
-- [ ] Every box above is checked with its evidence.
-- [ ] Reply to the operator with the report the execution playbook names.
+- [ ] 上のすべての確認欄に、証拠を伴うチェックが付いている。
+- [ ] 実行手順書が定める報告を操作者へ返す。
 
-## Appendix A. Prototype evidence
+## 付録 A。試作の証拠
 
-<Each open question a prototype answered, with the branch, the SHA, and the artifact links. Each question that stays unproven.>
+<試作で答えが出た各未決事項、ブランチ、SHA、成果物リンク。未実証のまま残る各事項。>
 
-## Appendix B. Alternatives rejected
+## 付録 B。不採用の代案
 
-<Each approach weighed and why it lost.>
+<検討した各方式と、不採用の理由。>
 
-## Appendix C. Risks
+## 付録 C。リスク
 
-<Each risk with the PR it lands in and what the owner watches.>
+<各リスク、それが入る PR、担当者が監視する点。>
 
-## Appendix D. Links and reading list
+## 付録 D。リンクと参考資料
 
-<Docs to read before editing. Which PRs get `pstack/skills/how/SKILL.md` and `pstack/skills/interrogate/SKILL.md`. The trail per `pstack/skills/show-me-your-work/SKILL.md`.>
+<編集前に読む文書。`skills/how/SKILL.md` と `skills/interrogate/SKILL.md` を使う PR。`skills/show-me-your-work/SKILL.md` に従う記録。>
 ````
 
-**Reply:** the plan path, the PR ids with their dependencies and the review-gated set, what the prototypes proved and what stays unproven, and the check script's output.
+**返信に含める内容：** 計画のパス、PR ID と依存関係、レビューが必要な PR の集合、試作で実証したことと未実証のこと、検査スクリプトの出力。

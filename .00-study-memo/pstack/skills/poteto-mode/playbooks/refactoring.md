@@ -1,16 +1,16 @@
-### Refactoring
+### リファクタリング
 
-**You own the contract. The structure changes. The behavior does not.** Distinct from Feature, which adds behavior, and Bug fix, which corrects it.
+**挙動の契約に責任を持つ。構造を変え、挙動は変えない。** 挙動を追加する機能追加や、挙動を正すバグ修正とは異なる。
 
-If the cleanup reveals a missing feature or a real bug, split it out and ship the structural change first against the pinned contract. A redesign is allowed, but name it and route to Feature. Large or cross-cutting structural work belongs to the **figure-it-out** skill. This playbook is the focused-to-medium change.
+整理中に不足する機能や実際のバグが見つかったら、別作業に分け、固定した契約に照らして構造の変更を先に出荷する。再設計してもよいが、そう明示して機能追加へ振り分ける。大規模または横断的な構造変更には **figure-it-out** スキルを使う。この手順書は、対象を絞った変更から中規模の変更までを扱う。
 
-1. Pin the behavior contract first. Run the **how** skill over the affected subsystem to learn the contract, then write a characterization test, snapshot, or equivalence harness that captures current behavior before any structure moves. If the area has no coverage, write the pin before touching structure. Type check and lint are not a pin.
-2. Name the structure the code is missing per **principle-model-the-domain**. Boring code stays when the shape is already clear and local. The reshape must delete branches or invalid states, not add indirection.
-3. Name the target shape. State what the module layout, types, and call graph should be if built today (**principle-foundational-thinking**, **principle-redesign-from-first-principles**). If the target crosses a function boundary, run the **architect** skill for parallel design exploration of the shape before the move.
-4. Subtract before you add. Delete dead code, collapse one-caller wrappers, drop redundant validators, and remove orphan references before introducing the new shape (**principle-subtract-before-you-add**). The smallest change that reaches the target shape ships (**principle-laziness-protocol**). A speculative cleanup that "might help" gets reverted.
-5. Move in small behavior-preserving steps, each keeping the pin green. For API reshapes, migrate every caller and delete the old API in the same wave (**principle-migrate-callers-then-delete-legacy-apis**). No compatibility shims, no parallel old-and-new paths. Spot-check every rename against the actual files. Renames silently miss usages in strings, prose, and back-references. Delegate the mechanical edits to a subagent using your configured refactoring model (default `grok-4.6-fast-xhigh`) with a specific scope (file paths, the names being moved, the behavior to hold). Review the diff yourself.
-6. Prove behavior is unchanged on the real artifact, not "it compiles" (**principle-prove-it-works**). For larger reshapes, run an equivalence check: a script that diffs old-vs-new outputs, a recorded baseline replayed against the new code, or a smoke run on the matching surface via the relevant control skill. Own the verification yourself. Do not trust a delegate's "looks good" summary.
-7. Confirm the change is worth keeping. The success measure is reduced reader load (**principle-minimize-reader-load**). If the diff does not lower reader load somewhere, revert it.
-8. Rebase into small ordered commits. A subtraction commit, then the reshape, then any follow-on cleanup. Shape them with the **sequence-verifiable-units** principle skill, so each behavior-preserving slice stays green before the next. Run **Opening a PR**.
+1. 最初に挙動の契約を固定する。対象サブシステムに **how** スキルを使って契約を把握し、構造を動かす前に、現状の挙動を記録する特性テスト、スナップショット、または等価性検証の仕組みを書く。対象にテストがなければ、構造に触る前に挙動を固定する検証を作る。型チェックや lint は、その代わりにはならない。
+2. **principle-model-the-domain** に従い、コードに欠けている構造を明示する。形がすでに明確で局所的なら、平凡なコードはそのまま残す。構造の変更は分岐や不正な状態を減らすために行い、間接化を増やしてはならない。
+3. 目標の構造を示す。今から作るならモジュール配置、型、呼び出しグラフをどうすべきかを述べる。**principle-foundational-thinking** と **principle-redesign-from-first-principles** に従う。目標が関数の境界をまたぐなら、移動前に **architect** スキルで構造を並列に検討する。
+4. 足す前に引く。新しい構造を導入する前に、死んだコードを削り、呼び出し元が 1 つだけのラッパーを畳み、重複する検証を外し、宙に浮いた参照を除く。**principle-subtract-before-you-add** に従う。目標の構造に届く最小の変更を出荷する。**principle-laziness-protocol** に従い、「役立つかもしれない」という推測だけの整理は戻す。
+5. 挙動を保つ小さな手順で進め、各手順で固定した検証を成功させ続ける。API の形を変える場合は、すべての呼び出し元を移行し、同じ一連の作業で古い API を削除する。**principle-migrate-callers-then-delete-legacy-apis** に従う。互換用の継ぎ足しや、新旧経路の併存は認めない。名前変更は実ファイルと照合して確認する。文字列、説明文、逆参照の使用箇所は、名前変更で気づかず取りこぼしやすい。機械的な編集は、設定済みの refactoring 記述子、既定値は `grok:grok-4.6@xhigh`、を使い、provider dispatch 経由で委任する。`isolated-write`、専用 worktree、ファイルパス、移動する名前、維持すべき挙動を含む具体的な範囲を指定する。差分は自分でレビューする。
+6. 「コンパイルが通る」ではなく、実物で挙動が変わらないことを示す。**principle-prove-it-works** に従う。大きな構造変更では、新旧出力を比較するスクリプト、記録した基準を新コードで再生する仕組み、または対象に合った操作面での簡易動作確認など、等価性の検証を行う。操作用スキルは CLI/TUI なら `run`、UI なら `verify` を使う。検証は自分の責任で行い、委任先の「問題なさそう」という要約を信用して済ませない。
+7. 変更を残す価値があるかを確認する。成功の尺度は読む人の負担が減ることである。**principle-minimize-reader-load** に従う。差分がどこでも読解負担を減らしていなければ戻す。
+8. rebase で、小さく順序の整ったコミットにする。削除のコミット、構造変更、その後の整理の順に並べる。**sequence-verifiable-units** 原則スキルに従い、挙動を保つ各単位の検証を成功させてから次へ進む。**PR の作成**を実行する。
 
-**Reply:** the structure that changed, the pin you held it against, the equivalence proof, the reader-load delta, what shipped and what got reverted. No new behavior.
+**返信に含める内容：** 変えた構造、維持した検証基準、等価性の証拠、読解負担の変化、出荷した変更、戻した変更。新しい挙動は含めない。

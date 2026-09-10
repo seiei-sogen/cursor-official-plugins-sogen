@@ -1,11 +1,11 @@
-### Session pickup
+### セッションの引き継ぎ
 
-**You own the resume point. Read the prior trail, don't redo it.**
+**再開地点に責任を持つ。以前の記録を読み、やり直さない。**
 
-1. Locate the prior trail. A local transcript under the active workspace's `agent-transcripts/` directory (the system prompt names the path. Do not glob across `~/.cursor/projects/*/`, that crosses workspace boundaries and reads private chats from unrelated projects), a cloud-agent URL, or a pushed branch. Read the metadata overview and last messages first, then scan back for the decision points. Parse a long transcript in a subagent and keep the reduced timeline in the main thread (the **principle-guard-the-context-window** skill).
-2. Reconstruct operational state. The branch and worktree, what already landed (`git log`, `git diff` against the base), the open todos, the decisions made. The prior trail is authoritative input. Resist the bias to re-derive it.
-3. Diff done vs pending. Compare what shipped against what was planned, name the resume point, do not re-run the prior repro or redo completed work. A "let me verify from scratch" pass means you're treating the trail as untrustworthy when it's authoritative.
-4. Route the remaining work to the matching playbook and pick the verdict: continue the execution, ship a finished recommendation, ratify or override a prior conclusion, or postmortem a failed run. The pickup playbook ends here. The routed playbook owns the rest.
-5. Verify the inherited claims against the original goal on the real artifact (the **principle-prove-it-works** skill). A passing prior self-report is not the proof.
+1. 以前の記録を探す。Claude Code のプロジェクト別会話記録ディレクトリ `~/.claude/projects/<encoded-cwd>/*.jsonl` にあるローカル記録、クラウドエージェントの URL、または push 済みブランチを使う。`<encoded-cwd>` はワークスペースの cwd の `/` を `-` に置き換えたものである。`~/.claude/projects/` 配下の別ディレクトリにまたがって glob をかけない。ワークスペースの境界を越え、無関係なプロジェクトの私的な会話を読むことになる。まずメタデータの概要と最後のメッセージを読み、その後、判断の分岐点までさかのぼる。長い会話記録はサブエージェントで解析し、要約した時系列をメインスレッドに残す。**principle-guard-the-context-window** スキルに従う。
+2. 作業状態を復元する。ブランチと worktree、すでに取り込まれた変更、未完了の TODO、下した判断を確認する。取り込み済みの変更は `git log` とベースに対する `git diff` で確認する。以前の記録を正式な入力として扱い、結論を一から導き直そうとしない。
+3. 完了済みと保留中の差を確認する。出荷したものを計画と比較し、再開地点を明示する。以前の再現を再実行したり、完了済みの作業をやり直したりしない。「最初から確認しよう」という作業は、正式な記録を信頼できないものとして扱うことになる。
+4. 残作業を適切な手順書へ振り分け、対応を選ぶ。実行を続ける、完成した提案を届ける、以前の結論を承認または覆す、失敗した実行を事後分析する、のいずれかである。引き継ぎの手順書はここで終わる。以降は振り分け先の手順書が担当する。
+5. 引き継いだ主張を、当初の目的に照らして実物で検証する。**principle-prove-it-works** スキルに従う。以前の成功という自己申告は証明にならない。
 
-**Reply:** where the prior agent stopped, what you inherited vs redid (ideally nothing redone), the resume point, and the outcome.
+**返信に含める内容：** 前のエージェントが止まった場所、引き継いだこととやり直したこと、再開地点、結果。やり直しはないのが望ましい。

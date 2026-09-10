@@ -1,111 +1,112 @@
-### Orchestrate
+### 全体調整
 
-**You own the program, never the code. Author briefs, drain the queue, keep the frontier green, decide.** For a whole project handed to one standing coordinator chat: multi-day, many stacked PRs, dozens to hundreds of subagents, the human checking in twice a day instead of every five minutes. One task driven to a predicate is Autonomous run. One ambitious run needing a bespoke workflow is figure-it-out. Route here when the work outlives any single agent. Work one agent could finish inside the session's budget is not a program.
+**コードではなく活動全体に責任を持つ。作業指示を書き、キューを処理し、次にマージする PR のチェックを成功させ、判断する。** 複数日、多数の積み重ねた PR、数十から数百のサブエージェントを伴うプロジェクト全体を、常設の調整役 1 つの会話に任せる場合に使う。人間の確認は 5 分ごとではなく 1 日 2 回程度を想定する。1 つのタスクを終了条件まで進めるなら自律実行、専用ワークフローが必要な大がかりな 1 回の実行なら figure-it-out を使う。個々のエージェントの活動期間を越えて続く作業をここへ振り分ける。1 エージェントがセッションの予算内で終えられる作業は、この規模の活動ではない。
 
-Ceremony must scale with the program. On cheap near-identical units, collapse it as each section directs.
+手続きの量は活動の規模に合わせる。低コストでほぼ同じ作業単位を扱う場合は、各節の指示に従って簡略化する。
 
-Three rules carry the rest.
+全体を支える規則は 3 つである。
 
-- Completions are queue events, not interrupts.
-- Every spawn and every resume carries the standing orders verbatim.
-- The brief is the product. A vague brief fails quietly, because a worker cannot ask you a question.
+- 完了通知はキューのイベントであり、割り込みではない。
+- 起動と再開のたびに、継続指示をそのまま渡す。
+- 成果物は作業指示である。作業者は自分に質問できないため、曖昧な指示は気づかないまま失敗する。
 
-#### Roles and placement
+#### 役割と配置
 
-- **Coordinator (this chat).** Local. Frames, authors briefs, drains the inbox, owns the human report, makes judgment calls. It never authors or edits code. Conflicted merges, restacks, and code changes are always tasks. Mechanically landing a verified unit (fast-forward or clean cherry-pick of a worker's commit, then push) is bookkeeping the coordinator may do itself on repos where local git is cheap. Queueing finished work behind an idle stacker is how a deadline harvests nothing. The loop is agentic end to end. Agents are spawned, resumed, and drained only through the Task tool. State reads and writes go through `scripts/orch/orch.ts` at drain points, one command in and one line out. The CLI never spawns, waits, or wakes anything.
-- **Sub-coordinator.** Always local, durable, one per track, and only when the program exceeds what one coordinator's drains can manage. A track the coordinator can drain itself needs no middle layer. Each nested layer re-pays a full orientation preamble, and a blocking sub-coordinator hides its children while the parent idles. Owns its track's units and boards, authors its workers' briefs, spawns its own workers and verifiers (nesting works to depth 3, and a nested spawn has the full Task schema including `environment`). Rolls up aggregates at wave boundaries. Never forwards raw child reports. Cap in-flight children at what one drain can process, roughly ten, as a rolling window. Never as blocking batches, which cost the slowest child of every batch.
-- **Worker / verifier.** Always `environment: "cloud"` unless the task needs this machine: `control-ui` or `control-cli` runtime verification (from `cursor-team-kit`). Reading local transcripts under `agent-transcripts/`. Simulators and local IDE state. Auth that exists only here. Cloud agents cannot read the local store, so their briefs inline what they need or point at repo paths. Prefer fewer, broader workers. One writer per worktree or branch (principle-separate-before-serializing-shared-state). Run a unit's verifier on a different model family from its worker.
+- **調整役（この会話）。** 枠組みを決め、作業指示を書き、受信キューを処理し、人間への報告と判断を担う。コードを書いたり編集したりしない。競合を伴うマージ、スタックの積み直し、コード変更は常にタスクとして割り当てる。検証済み単位を機械的に取り込む操作、つまり作業者のコミットを fast-forward または競合のない cherry-pick で取り込み push する操作は事務処理であり、ローカル Git の費用が小さいリポジトリでは調整役自身が行ってよい。完了済み作業を休止中のスタック担当者の後ろに並べると、期限までに何も取り込めなくなる。反復の最初から最後までエージェントが進める。エージェントの起動、再開、結果回収は `Agent` ツールだけで行う。状態の読み書きはキュー回収時に `orch` CLI を通し、1 コマンドを入れて 1 行を受け取る。CLI 自体は何も起動せず、待たず、起こさない。
+- **下位調整役。** 継続的な役割として担当領域ごとに 1 人置く。ただし、1 人の調整役がキュー回収で管理できる量を超えた場合だけにする。調整役が自分で回収できる領域に中間層は不要である。入れ子の層を増やすたびに説明の前置き全体の費用を払い、待機する下位調整役は子の状態を隠したまま親を遊ばせる。自分の領域の単位と管理表を担当し、作業者への指示を書く。実行環境が子からの起動を許せば、自分で作業者と検証者を起動する。許さなければ、同じレビュー分離を保ちながら領域の単位を直接担当する。並列実行の区切りで集計を返し、子の生の報告をそのまま転送しない。同時に動く子は、1 回の回収で扱えるおよそ 10 件を上限にし、完了した枠へ順次補充する。バッチごとの待ち合わせにはしない。各バッチで最も遅い子の時間を払うためである。
+- **作業者 / 検証者。** `run_in_background: true` のバックグラウンドサブエージェントを使う。Claude Code にリモート作業環境はないため、隔離は別マシンではなく、書き込み担当者ごとの worktree またはブランチで行う。実行時の検証は CLI/TUI なら `run` スキル、UI なら `verify` スキルを通す。サブエージェントはこの会話を見られないため、必要事項を作業指示に含めるか、リポジトリと状態保存先のパスを示す。人数を減らし、各自の範囲を広めにすることを優先する。worktree またはブランチごとに書き込み担当者は 1 人とする。principle-separate-before-serializing-shared-state に従う。各単位の検証者は、作業者とは別のモデル系列で動かす。
 
-Depth stays at coordinator, track, worker. Author the track decomposition per project (build, landing, and verification are common cuts, not a required shape). Hard-coded swarm trees were tried and parked as too rigid.
+深さは調整役、担当領域、作業者までにする。領域の分割はプロジェクトごとに決める。実装、取り込み、検証は一般的な切り方だが、必須の形ではない。固定された swarm の木構造は試したものの、硬直的すぎるため採用を見送った。
 
-#### Store layout
+#### 状態保存先の構成
 
-Create `orchestrate/<project-slug>/` in the current agent's store (path in the system prompt). Every file has exactly one writer. Owners publish facts, readers aggregate at read time. Use `bun scripts/orch/orch.ts` for bookkeeping, written below as `orch`, while its canonical plain TSV and JSON stay readable without the CLI.
+リポジトリ外、セッション外に `~/.claude/orchestrate/<project-slug>/` を作る。活動は数日続き、セッション再起動も想定するため、保存先はこの会話より長く存続する必要がある。「生存確認と失敗」を参照する。保存先は事後分析の記録にもなる。便利でもセッションの一時メモ領域は使えない。セッションに属する一時的な領域なので、再起動すると活動の唯一の状態が失われる。各ファイルの書き込み担当者は正確に 1 人とする。担当者が事実を公開し、読む側がその時点で集計する。事務処理にはインストール済みプラグインの `bun skills/poteto-mode/scripts/orch/orch.ts` を使う。以下では `orch` と記す。正本となる通常の TSV と JSON は、CLI なしでも読めるよう保つ。
 
-- `preferences.md` is the standing-orders register: numbered lines, one constraint each (model policy, stack shape and count, verification bar, forbidden paths, escalation policy). Paste it verbatim into every spawn and every resume. Directives decay across resumes, and each dropped one costs a human turn. When you catch yourself restating an instruction, append the line before you act (principle-encode-lessons-in-structure).
-- `overview.md` is the durable PR and issue DB. Append. Never rewrite wholesale per event.
-- `units.tsv` has one row per unit: id, track, state, branch, PR, head SHA, brief path. Update rows in place.
-- `frontier.json` is the computed merge frontier, per Stack safety.
-- `ledger.tsv` is the verification ledger, per Verification.
-- `inbox/` holds completion pointers. `gates.md` parks human gates (question, options, default on no answer).
-- `decisions.tsv` is the trail via the show-me-your-work skill.
-- `status.md` is derived from `units.tsv` and `ledger.tsv` at each drain, never hand-maintained. Regenerate it from the tables instead of narrating events into it.
+- `preferences.md` は継続指示の台帳である。番号付きの各行に、モデル方針、スタックの形と数、検証基準、禁止パス、判断を仰ぐ方針などの制約を 1 つずつ書く。起動と再開のたびに全文をそのまま貼る。再開を重ねると指示が薄れ、1 つ抜けるたびに人間の 1 ターンを費やす。同じ指示を繰り返していると気づいたら、行動前に行を追加する。principle-encode-lessons-in-structure に従う。
+- `overview.md` は PR と Issue の永続的なデータベースである。追記し、イベントごとに全体を書き直さない。
+- `units.tsv` は作業単位ごとに 1 行を持つ。id、担当領域、状態、ブランチ、PR、head SHA、作業指示のパスを記録する。行をその場で更新する。
+- `frontier.json` は計算したマージ対象の境界を保持する。「スタックの安全性」に従う。
+- `ledger.tsv` は検証台帳である。「検証」に従う。
+- `inbox/` は完了結果への参照を置く。`gates.md` は、人間の判断が必要な事項を質問、選択肢、返答がない場合の既定値とともに保留する。
+- `decisions.tsv` は show-me-your-work スキルに従う判断記録である。
+- `status.md` はキュー回収のたびに `units.tsv` と `ledger.tsv` から導出し、手で維持しない。イベントを書き連ねず、表から再生成する。
 
-#### The brief
+#### 作業指示
 
-Your prompts to agents are your only product, and a sloppy brief compounds into slop across the whole tree. Every spawn carries all of it. A field you cannot fill is a unit you have not scoped yet.
+エージェントへのプロンプトが自分の唯一の成果物であり、粗雑な作業指示は全体へ粗雑さを増幅させる。起動のたびに、以下をすべて渡す。埋められない欄があれば、その単位の範囲がまだ定まっていない。
 
 ```
-GOAL         one sentence, the outcome, executable by a stranger with no chat access
-SCOPE        paths this unit may write; paths it may not; its exclusive worktree or branch
-CONTEXT      pointers to files and PRs; upstream reports pasted in full when this unit
-             depends on them, because workers cannot see siblings
-ACCEPTANCE   checkable criteria, one per line
-VERIFY       exact commands or the control-skill path, plus known gotchas
-TIMEBOX      rough cap on runtime; on expiry, return partial findings and stop rather than run on
-FORBIDDEN    no gt, no rebase, no force-push, no fixes outside scope, plus unit-specific bans
-REPORT       status, branch, head SHA, PRs, verdict, what you actually ran, deviations,
-             suggested follow-ups
-STANDING     <preferences.md pasted verbatim>
+GOAL         成果を 1 文で示す。会話を見られない初見の人でも実行できること。
+SCOPE        書き込んでよいパスと禁止パス、専用 worktree またはブランチ。
+CONTEXT      ファイルと PR への参照。上流の報告に依存する場合は全文を貼る。
+             作業者は兄弟エージェントを見られないためである。
+ACCEPTANCE   確認可能な受け入れ条件を 1 行に 1 つ。
+VERIFY       正確なコマンド、または操作用スキル。CLI/TUI は `run`、
+             UI は `verify`。既知の注意点も含める。
+TIMEBOX      実行時間のおおよその上限。期限が来たら部分的な結果を返して止まり、続けない。
+FORBIDDEN    gt、rebase、force-push、範囲外の修正を禁止し、単位固有の禁止事項も加える。
+REPORT       状態、ブランチ、head SHA、PR、判定、実際に実行したこと、逸脱、
+             推奨する後続作業。
+STANDING     <preferences.md をそのまま貼る>
 ```
 
-Size the brief to the unit. A one-command unit gets the template collapsed to a paragraph that still names goal, scope, the verify command, and the report shape. A 4KB scaffold around a two-line edit costs more to write and obey than the edit. Local spawns may reference the standing-orders file by store path. Verbatim paste is for cloud spawns and every resume.
+作業指示の大きさは単位に合わせる。コマンド 1 回の単位なら、目的、範囲、検証コマンド、報告の形を残しつつ、ひな形を 1 段落に縮める。2 行の編集に 4KB の枠組みを付けると、編集自体よりも書いて従う費用が大きい。起動時は、状態保存先のパスで継続指示ファイルを参照してよい。全文の貼り付けが必要なのは、すべての再開と、単独で成立する必要がある作業指示である。
 
-A sub-coordinator brief adds its track boundary and unit list, its spawn budget with the cloud default and the local exception list, the drain protocol, and the rollup format (per child: name, status, PR, head SHA, verdict, one line, plus track status and frontier delta).
+下位調整役への指示には、担当領域の境界と単位一覧、起動できる数、キュー回収手順、集計形式を加える。集計は子ごとに名前、状態、PR、head SHA、判定を 1 行にまとめ、領域の状態とマージ対象の境界の変化を添える。
 
-A dependency is a context relay, not just ordering. Undeclared upstream context makes the worker guess. Missing fields are a refuse-to-spawn condition. Audit one sampled worker brief per sub-coordinator per wave, concurrently with the wave it samples, never as a gate in front of it. A failing brief stops that track and fixes the sub-coordinator's instructions, not just the worker, because brief quality decays late in a run. Never resume-chain a brief. Respawn fresh with consolidated scope.
+依存関係は単なる順序ではなく、文脈の引き継ぎである。上流の文脈を示さないと作業者に推測させる。欠けた欄があれば起動しない。並列実行のまとまりごと、下位調整役ごとに、作業者への指示を 1 件抜き出して監査する。対象の実行と並行して行い、その前の関門にはしない。指示が不合格なら、その領域を止め、作業者だけでなく下位調整役の指示を直す。実行後半ほど指示の品質が落ちるためである。作業指示を再開の連鎖で継ぎ足さない。範囲をまとめ直して新規起動する。
 
-#### Steps
+#### 手順
 
-1. **Frame.** State the done predicate as something countable ("all 126 units merged, each ledger-verified `unit-test-verified` or better"). Quantify scope: units, rough effort, expected stacks, and the wall-clock budget. If one agent could finish inside that budget, stop here and run Autonomous run instead. Collapsing must not depend on another document being present. It means do the work directly in this session, plain workers where they help, verification inline, landing as you go, and none of the store, register, or pilot machinery below. Schedule landing against the budget. By roughly 70% of it, stop spawning and land what is verified. Name the tracks per project. A contested decomposition or one-way door goes through the arena skill before the pilot. Present the framing once. Reversible prep proceeds without waiting.
-2. **Install the runtime.** Run `orch init`. Open the trail via the show-me-your-work skill, write the standing orders before any spawn, and seed `frontier.json` from existing PRs with `orch frontier set --repo <repo-dir>`.
-3. **Pilot.** Push one unit through the whole path: brief, worker, verification, stack entry, ledger row, merge. The pilot exists to falsify the brief template, the verify recipe, and the unit size while that costs one agent instead of fifty. Fix the contract from pilot evidence before any fan-out. Scale the pilot to the unit. On programs of near-identical cheap units, the first unit is the pilot, run as a normal unit with its verify command inline, and fan-out starts the moment it lands. The dedicated pilot pipeline (separate verifier agent, audit gate) is for expensive or novel unit shapes, not for clone-units where a serialized pilot has nothing to falsify.
-4. **Scale.** Spawn a rolling window of workers up to the in-flight cap, refilling as children finish. Blocking batches pay the slowest child of every batch. Spawn track sub-coordinators only past the one-drain threshold in Roles. Recompute ready work after each drain. Relay upstream reports into downstream briefs. Keep sibling communication upward only. The sampled brief audit runs alongside the wave it samples and stops the next refill on failure, not the current one.
-5. **Drain.** Run the queue discipline below at every drain point.
-6. **Land.** Landing is continuous, never a terminal phase. Integration starts with the first verified unit and runs alongside the remaining waves. On heavy repos the stacker is a standing role from wave one, integrating as units verify. On repos where local git is cheap, the coordinator lands verified units itself per Roles. Keep the frontier green before upper-stack work. Stack safety governs. Advance `frontier.json` only on merge or reported new head SHAs.
-7. **Close.** Drain the final inbox, reconcile every spawned agent to a terminal row (done, abandoned, zombie-reconciled), confirm the predicate on the real artifact, confirm every landed PR has a verdict for its current head SHA, audit the trail per show-me-your-work including its cross-model review, encode recurring corrections into `preferences.md` or the brief template. Leave the store intact. It is the postmortem.
+1. **枠組みを決める。** 完了条件を、「全 126 単位がマージ済みで、各単位が台帳上 `unit-test-verified` 以上」のように数えられる形で示す。単位数、概算の作業量、想定スタック、実時間の予算で範囲を定量化する。その予算内に 1 エージェントで終わるなら、ここでやめて自律実行を使う。簡略化は別文書の存在に依存させない。このセッションで直接進め、役立つ箇所に通常の作業者を使い、その場で検証し、進めながら取り込むことを意味する。以下の保存先、台帳、試験運用の仕組みは使わない。取り込みを時間予算に合わせて計画する。およそ 70% を使った時点で起動を止め、検証済みのものを取り込む。担当領域はプロジェクトごとに決める。分割に異論がある場合や後戻りできない判断は、試験運用前に arena スキルを通す。枠組みは一度提示する。元に戻せる準備は返答を待たず進める。
+2. **実行基盤を用意する。** `orch init` を実行する。show-me-your-work スキルで判断記録を始め、起動前に継続指示を書き、`orch frontier set --repo <repo-dir>` で既存 PR から `frontier.json` を初期化する。
+3. **試験運用する。** 1 単位を、作業指示、作業者、検証、スタック登録、台帳行、マージまで一通り進める。試験運用は、50 エージェントではなく 1 エージェントの費用で、作業指示のひな形、検証手順、単位の大きさが妥当かを試すためにある。並列展開前に、試験運用の証拠から契約を修正する。試験運用の規模も単位に合わせる。低コストでほぼ同じ単位が並ぶ活動では、最初の単位を通常どおり、その場の検証コマンド付きで実行し、取り込んだ瞬間に並列展開を始める。独立した検証エージェントや監査条件を持つ専用の試験運用は、高コストまたは新しい形の単位向けである。直列の試験運用で新たに確かめることがない複製的な単位には使わない。
+4. **規模を広げる。** 同時実行上限まで作業者を起動し、子が終わるたびに枠を補充する。バッチ全体を待つと、毎回最も遅い子の時間を払う。領域の下位調整役は、「役割と配置」の 1 回の回収で管理できる量を超えた場合だけ置く。回収のたびに着手可能な作業を計算し直す。上流の報告を下流の作業指示へ引き継ぐ。兄弟間の連絡は上位を経由させる。抜き出した作業指示の監査は対象の実行と並行し、失敗時には現在の起動ではなく次の補充を止める。
+5. **キューを回収する。** 回収地点ごとに、以下のキュー運用規則を実行する。
+6. **取り込む。** 取り込みは継続的に行い、最終フェーズにしない。最初の検証済み単位から統合を始め、残りの並列作業と並行して続ける。重いリポジトリでは最初からスタック担当者を常設し、検証された単位から統合する。ローカル Git の費用が小さいリポジトリでは、「役割と配置」に従って調整役自身が検証済み単位を取り込む。上段の作業より、次にマージする PR のチェック成功を優先する。「スタックの安全性」に従う。`frontier.json` を進めるのは、マージ時または新しい head SHA の報告時だけにする。
+7. **完了する。** 最後の受信キューを回収し、起動したすべてのエージェントを終端の行に対応づける。状態は完了、放棄、遅れて戻った結果の照合済みなどとする。実物で完了条件を確認し、取り込んだすべての PR に現在の head SHA の判定があることを確かめる。show-me-your-work に従い、別モデルのレビューも含めて判断記録を監査する。繰り返した修正を `preferences.md` または作業指示のひな形に組み込む。状態保存先は事後分析の記録として残す。
 
-#### Queue and drain
+#### キューと回収
 
-- On a completion notification, run `orch inbox push <agent> <unit> <status> [--report PATH]` and return to what you were doing. Never deep-review inline. A completion that needs review becomes a verifier unit. Never review a diff inside a drain.
-- Drain in batches at four points: the end of a critical section, a track rollup, a frontier watcher wake (arm it via the loop skill, with a long heartbeat fallback), and before a human report. Begin each batch with `orch inbox drain`. Arrivals during a drain wait for the next one.
-- Critical sections you finish first: authoring a brief, a stack operation, a conflict decision, writing a gate, updating ledger or frontier.
-- Each drain classifies every pointer (landed, needs-verify, failed, zombie, noise), writes the resulting rows through `orch unit add`, `orch unit set`, and `orch ledger record`, runs `orch status`, then spawns the next wave in one message.
-- Account for every spawned child at its track's rollup: arrived, respawned, or its scope explicitly absorbed. Silently redoing a missing child's work hides both the wasted spend and the coverage gap its result existed to close.
-- A drain turn ends with the three lines from `orch status`: counts against the states, what changed, gates open. Detail lives in `status.md`. The full reply contract applies at checkpoints and close.
+- 完了通知が来たら `orch inbox push <agent> <unit> <status> [--report PATH]` を実行し、元の作業へ戻る。その場で詳しくレビューしない。レビューが必要な完了結果は検証単位にする。キュー回収の中で差分をレビューしない。
+- 回収は、クリティカルセクションの終了時、担当領域の集計時、マージ対象の監視による再開時、人間への報告前の 4 地点でまとめて行う。監視は loop スキルで設定し、長い間隔の定期起動を予備にする。各回収は `orch inbox drain` で始める。回収中に来た通知は次へ回す。
+- 先に終えるクリティカルセクションは、作業指示の作成、スタック操作、競合の判断、承認待ち事項の記録、台帳やマージ対象の更新である。
+- 回収ごとに各参照を、取り込み済み、要検証、失敗、遅延復帰、不要通知に分類する。`orch unit add`、`orch unit set`、`orch ledger record` で結果の行を書き、`orch status` を実行し、その後 1 回のメッセージで次のまとまりを起動する。
+- 担当領域の集計時に、起動した子すべてを、結果到着、再起動、または作業範囲を明示的に吸収したものとして計上する。不明な子の作業を黙ってやり直すと、無駄な費用と、その結果で埋めるはずだった網羅性の穴が隠れる。
+- 回収のターンは、`orch status` の 3 行で終える。状態別件数、変化、未完了の承認事項である。詳細は `status.md` に置く。節目と完了時には、完全な返信要件を適用する。
 
-#### Stack safety
+#### スタックの安全性
 
-- The frontier is a computed object, never narrative. Recompute `frontier.json` from `gt` after every merge and stack mutation because GitHub base refs drift mid-restack while gt tracking is authoritative: ordered PR list, branch names, head SHAs, a generation number, the lowest unmerged PR. Resolve it where gt knows the stack, normally the stacker's clone. A checkout whose gt metadata never saw the submits reports no PRs and the command errors rather than guessing.
-- Exactly one stacker per stack may run `gt`, serialized within its stack. Record the holder in the standing orders. Restacks run in cloud. A local restack at this scale takes the laptop down.
-- Workers never rebase and never run `gt`. Babysitters follow `playbooks/babysit.md`, one per stack, scoped to one immutable frontier generation. They report conflicts to the stacker rather than restacking.
-- PR closes and retargets go through the stacker only. Closing a base PR orphans every chain above it. Merges and stack surgery are units with briefs like any other.
-- One retro watcher follows merged PRs for reverts, post-merge CI breaks, and orphaned follow-ups.
+- 次にマージする対象は計算したオブジェクトであり、文章で管理しない。マージとスタック変更のたびに `gt` から `frontier.json` を再計算する。積み直しの途中では GitHub のベース参照がずれる一方、gt の追跡情報が正だからである。順序付き PR 一覧、ブランチ名、head SHA、世代番号、最下段の未マージ PR を記録する。通常はスタック担当者の clone など、gt がスタックを把握する場所で解決する。gt のメタデータが送信を見ていないチェックアウトでは PR が見つからず、コマンドは推測せずエラーになる。
+- `gt` を実行できるのはスタックごとに正確に 1 人の担当者とし、スタック内では直列化する。担当者を継続指示に記録する。この規模の積み直しは遅く、実行者を待たせるため、専用単位にして調整役には行わせない。
+- 作業者は rebase せず、`gt` も実行しない。見守り担当者はスタックごとに 1 人とし、`playbooks/babysit.md` に従い、不変な 1 世代のマージ対象だけを扱う。積み直さず、競合をスタック担当者へ報告する。
+- PR のクローズとベース変更は、スタック担当者だけを通す。ベース PR を閉じると、その上の連鎖がすべて親を失う。マージとスタックの組み替えも、他と同様に作業指示を持つ単位とする。
+- 事後監視担当者を 1 人置き、マージ済み PR の取り消し、マージ後の CI 失敗、取り残された後続作業を追う。
 
-#### Verification
+#### 検証
 
-Scale verification to the unit. When VERIFY is a single cheap command, the worker runs it and reports the output, and the coordinator spot-checks receipts. A dedicated verifier agent (on a different model family than the worker) is for units whose verification is expensive, judgment-laden, or high-blast-radius. A verifier agent whose entire product would be rerunning one command is ceremony, not verification.
+検証の規模は単位に合わせる。VERIFY が低コストのコマンド 1 回なら、作業者が実行して出力を報告し、調整役が証跡を抜き取り確認する。作業者とは別モデル系列の専任検証者は、検証が高コスト、判断を多く要する、または影響範囲が大きい単位に使う。成果物がコマンド 1 回の再実行だけになる検証エージェントは、検証ではなく形式的な手続きである。
 
-Write ledger rows with `orch ledger record`. Check the current PR and head SHA with `orch ledger check`. `ledger.tsv`, one row per verdict, keyed by PR number plus head SHA: `live-ui-verified | unit-test-verified | type-check-only | verifier-blocked | verifier-failed`. CI green is an input to a verdict, not a verdict. Behavioral work needs better than `type-check-only`. `verifier-blocked` is not a pass. Respawn when the environment heals. `verifier-failed` gets a fix unit, not a re-verify. A worker may self-report. A verifier overrides it on the same key. A new head SHA voids the row, so re-verify after restack. The ledger answers "was this verified", not memory and not the transcript.
+台帳行は `orch ledger record` で書く。現在の PR と head SHA は `orch ledger check` で確認する。`ledger.tsv` は PR 番号と head SHA をキーに、判定ごとに 1 行を持つ。判定は `live-ui-verified | unit-test-verified | type-check-only | verifier-blocked | verifier-failed` である。CI の成功は判定の材料であり、判定そのものではない。挙動を扱う作業には `type-check-only` より強い検証が必要である。`verifier-blocked` は合格ではない。環境が回復したら再起動する。`verifier-failed` には再検証ではなく修正単位を割り当てる。作業者は自己申告してよいが、同じキーでは検証者の判定が優先する。head SHA が変われば行は無効になるため、積み直し後は再検証する。「検証済みか」を答えるのは台帳であり、記憶や会話記録ではない。
 
-A unit is not done until its output is externalized the moment it lands, never batched to the end of the run. A worker pushes its branch, a verifier writes its ledger row, receipts land in the store. Work that exists only on one VM when that VM dies was never done.
+作業単位は、取り込まれた瞬間に出力を外部へ残すまで完了ではない。実行の最後にまとめない。作業者はブランチを push し、検証者は台帳行を書き、証跡を状態保存先へ置く。1 台の VM にしか存在しない作業が VM の停止で失われたなら、その作業は完了していなかったことになる。
 
-#### Liveness and failure
+#### 生存確認と失敗
 
-- Never resume an agent to check on it. A resume restarts an idle agent. Probe read-only: the ledger, `units.tsv`, `gh`, pushed branches, the cloud agent's status in the Cursor dashboard. Transcript mtime is not liveness.
-- A silent death gets a synthetic postmortem row in the inbox (unit, failure mode, last evidence, options). Replan on evidence as it arrives. Never wait for full quiescence.
-- Retry by mode: cap-hit or oom, respawn with smaller scope. Network-drop, retry as-is. Tool-error, retry on a different model. Unknown, retry once. Two retries, then abandon the unit and replan around it.
-- A zombie that returns hours late reconciles against the current frontier and ledger before anything is accepted. Salvage unique findings through a fresh unit, never a blind merge.
-- When continued spawning would produce garbage tree-wide (bad upstream output, broken acceptance, dead infra), write a stop line at the top of the standing orders, let in-flight work finish, fix the cause, clear it.
-- Bound your own infra retries the same way you bound a child's. After a few consecutive tool aborts, stop retrying. Write a terminal handoff to durable state (what is done, where it lives, the exact command to resume) and end the run.
-- After a Cursor restart: local agents are dead, cloud work is not. Re-read the standing orders and `units.tsv`, recompute the frontier, reattach cloud work by PR and branch rather than agent id, respawn one sub-coordinator per track from its stored brief plus current state, drain, resume. The dead session's store lock clears itself on the next write. `orch` replaces a lock whose holder pid is gone.
+- 状況確認のためにエージェントを再開しない。再開は休止中のエージェントを再起動する操作である。台帳、`units.tsv`、`gh`、push 済みブランチ、バックグラウンドタスク一覧を読み取り専用で確認する。会話記録の更新時刻は生存の証拠ではない。
+- 無通知で停止したら、単位、失敗の種類、最後の証拠、選択肢を含む事後分析の行を受信キューに補う。証拠が来た時点で計画し直し、全体が静止するまで待たない。
+- 失敗の種類で再試行を変える。上限到達やメモリ不足なら範囲を縮めて再起動する。ネットワーク切断なら同じ内容で再試行する。ツールエラーなら別モデルで再試行する。不明なら 1 回試す。再試行は 2 回までとし、その後は単位を放棄して、それを避ける計画に変える。
+- 数時間遅れて戻った結果は、何かを受け入れる前に現在のマージ対象と台帳へ照合する。固有の発見は新しい単位を通じて回収し、盲目的にマージしない。
+- 上流の不正な出力、壊れた受け入れ条件、基盤停止などにより、起動を続けると全体で無効な成果物が増える場合、継続指示の先頭に停止行を書き、進行中の作業を終わらせ、原因を直して停止行を外す。
+- 自分の基盤再試行にも、子と同じように上限を設ける。ツールの中断が数回続いたら再試行をやめる。完了したこと、保存場所、再開する正確なコマンドを、永続的な状態へ最終引き継ぎとして書き、実行を終える。
+- セッション再起動後、実行中だったサブエージェントは死んでいるが、push 済みブランチ、開いている PR、状態保存先は残る。継続指示と `units.tsv` を読み直し、マージ対象を再計算する。エージェント ID ではなく PR とブランチで進行中の作業を再接続する。保存した作業指示と現在の状態から領域ごとに下位調整役を 1 人再起動し、キューを回収して再開する。終了したセッションの保存先ロックは次の書き込み時に自動解除される。`orch` は保持者の PID が存在しないロックを置き換える。
 
-#### Escalation
+#### 人間に判断を仰ぐ事項
 
-Reaches the human, batched into the status page rather than per item: irreversible actions (force-push to shared branches, deploys, deletions, closing someone else's PR), genuine product or preference calls no experiment settles, a standing order that contradicts observed reality, a program-level dead end that survived a replan. Park each as a `gates.md` entry before asking, and route work around it.
+人間には項目ごとに送らず、状況ページへまとめる。対象は、共有ブランチへの force-push、デプロイ、削除、他人の PR のクローズなどの取り消せない操作、実験では決まらない製品上の判断や好み、観測した現実と矛盾する継続指示、計画し直しても残る活動全体の行き詰まりである。尋ねる前にそれぞれを `gates.md` に記録し、他の作業はそれを避けて進める。
 
-Never reaches the human: frontier nudges, restack mechanics, retries, CI flake triage, review-thread triage, format fixes, scope the brief already forbids (refuse and continue), and "should I keep going". When in doubt, act and log.
+人間へ持ち込まないものは、マージ対象の小調整、積み直しの機械的操作、再試行、CI の不安定な失敗の分類、レビュースレッドの分類、書式修正、作業指示ですでに禁じた範囲、そして「続けるべきか」である。禁止範囲は断って継続する。迷ったら実行し、記録する。
 
-Mid-run discoveries fix only what blocks the frontier. Everything else parks in follow-ups. At this fan-out a small scope leak multiplies into PRs nobody asked for.
+実行中の発見は、次にマージする PR を妨げるものだけ直す。それ以外は後続作業に置く。この規模の並列展開では、小さな範囲の逸脱が、誰も頼んでいない PR を増やす。
 
-**Reply:** at checkpoints and close: the predicate and the count against it from `units.tsv` and `ledger.tsv`, tracks and what each landed, the frontier (PR list plus SHAs), verdicts summary, what was abandoned and why, gates awaiting the human (the only asks), the store path, and the trail path. Numbers from the tables, not narrative. Include PR links.
+**返信に含める内容：** 節目と完了時に、完了条件と `units.tsv`、`ledger.tsv` から得た達成件数、担当領域と各領域で取り込んだもの、次のマージ対象（PR 一覧と SHA）、判定の要約、放棄したものと理由、人間待ちの判断事項、状態保存先と判断記録のパスを示す。人間への質問はその判断事項だけにする。数値は文章の記憶ではなく表から取得する。PR リンクを含める。

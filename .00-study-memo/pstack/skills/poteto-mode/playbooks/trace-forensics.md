@@ -1,14 +1,14 @@
-### Trace forensics
+### 取得済みトレースの原因調査
 
-**You own the diagnosis from the artifact. Load it, shape it, narrow to the cause, attribute to source.**
+**記録に基づく診断に責任を持つ。読み込み、整形し、原因を絞り、ソースに対応づける。**
 
-Distinct from **Runtime forensics**, which instruments the live process. Here the capture already exists. The artifact is a fixed dataset, read it, don't re-run it. Keep tooling generic so the playbook stays portable: a DevTools or trace parser for cpuprofile and `.json.gz`, a text editor for a spindump, your heap tooling for a heapsnapshot.
+実行中のプロセスを計測する**実行中プロセスの原因調査**とは異なり、ここでは記録がすでに存在する。記録は固定されたデータセットとして読み、再実行しない。手順書を他の環境でも使えるよう、汎用的なツールを使う。cpuprofile と `.json.gz` には DevTools やトレースパーサー、spindump にはテキストエディター、heapsnapshot には手元のヒープ解析ツールを使う。
 
-1. Identify the format and load it with the right tool. Parse large artifacts in a subagent (the **principle-guard-the-context-window** skill) and keep the reduced finding in the main thread.
-2. Transform the raw artifact into a form you can query. Dump the trace or heap snapshot into sqlite, one row per sample, frame, or node. Reach the queryable shape before you read.
-3. Narrow to the cause. Query for the frames that hold the most time and walk the call tree to the hot path. For a leak, follow the retainer chain from the leaked object to a GC root. For a spindump, find the thread stuck on-CPU or blocked and its wait reason.
-4. Attribute to source. Map the hot frame to file, symbol, and line via the artifact's own symbols. A frame with no source mapping is not yet a diagnosis. Resolve the symbols, or say plainly the artifact does not carry them.
-5. Confirm against a paired capture when you have one. Diff a before and after artifact. Without one, mark the finding as the strongest hypothesis the artifact supports, not a confirmed cause.
-6. Hand back a cited diagnosis, no fix unless asked. Route to Bug fix or Perf issue once the cause is known. Throughput checkpoint stays one line: `throughput checkpoint: n/a, read-only forensics`.
+1. 形式を特定し、適切なツールで読み込む。大きな記録はサブエージェントで解析し、絞り込んだ結果だけをメインスレッドに残す。**principle-guard-the-context-window** スキルに従う。
+2. 生の記録を問い合わせ可能な形へ変換する。トレースやヒープスナップショットを sqlite に取り込み、サンプル、フレーム、ノードごとに 1 行とする。読み進める前に、問い合わせできる形を整える。
+3. 原因を絞る。最も時間を使うフレームを問い合わせ、呼び出しツリーをたどって負荷の集中する経路へ進む。リークなら、リークしたオブジェクトから GC ルートへ保持参照の連鎖をたどる。spindump なら、CPU を使い続けているかブロックしているスレッドと、その待機理由を探す。
+4. ソースに対応づける。記録に含まれるシンボルを使い、負荷の高いフレームをファイル、シンボル、行に対応づける。ソースに対応づかないフレームだけでは診断は完成していない。シンボルを解決するか、記録に含まれていないことを明言する。
+5. 比較用の記録があれば照合する。変更前後の記録を比較する。比較対象がなければ、確定した原因ではなく、記録が最も強く支持する仮説として結果を示す。
+6. 根拠を引用した診断を返し、依頼がなければ修正しない。原因が分かったらバグ修正または性能問題へ進む。作業の分担と順序のチェックポイントは、`throughput checkpoint: n/a, read-only forensics` の 1 行にする。
 
-**Reply:** the artifact and format, the reduced finding, the source location, the artifact paths, and whether a paired capture confirmed it.
+**返信に含める内容：** 記録とその形式、絞り込んだ結果、ソースの場所、記録ファイルのパス、比較用の記録で確認できたかどうか。

@@ -1,10 +1,10 @@
-### Pause safely
+### 安全な一時停止
 
-**You own a clean stop. Leave a checkpoint a cold-start agent can resume from.** This is explicit only. On "keep going", "going to bed, keep going", or "don't stop", do not pause.
+**安全に停止する責任を持つ。前提知識のないエージェントが再開できる記録を残す。** 明示的に求められた場合だけ使う。「続けて」「寝るので続けておいて」「止めないで」という指示では一時停止しない。
 
-1. Stop at a safe boundary. Finish the current atomic step or back out of it. Never stop mid-edit in a known-broken state. Start nothing new, and cancel any nested subagents.
-2. Take no irreversible action to pause. No PR and no push unless you already had one out.
-3. Make the work durable. Commit uncommitted edits as one clear `wip:` commit on the current branch so nothing is lost. If the tree is broken, say so in the commit body in one line.
-4. Write the resume note off-context. Capture intent, what you were doing, progress and what's verified, current state, next steps, key files, and gotchas. For the compaction trigger write it to a file like `/tmp/<slug>-resume.md`. If a show-me-your-work trail exists, point at it instead of duplicating it.
+1. 安全な区切りで止める。現在の不可分な手順を完了するか、その手順を取り消す。壊れていると分かっている編集途中の状態で止めない。新しい作業は始めず、入れ子のサブエージェントをすべて取り消す。
+2. 一時停止のために取り消せない操作をしない。すでに PR を作成または push していた場合を除き、PR 作成も push もしない。
+3. 作業を永続化する。未コミットの編集を、現在のブランチで分かりやすい 1 つの `wip:` コミットにまとめ、失われないようにする。作業ツリーが壊れている場合は、その旨をコミット本文に 1 行で書く。
+4. 会話のコンテキスト外に再開メモを書く。意図、進めていた作業、進捗と検証済み事項、現在の状態、次の手順、重要ファイル、注意点を記録する。コンテキスト圧縮に伴う停止なら、`/tmp/<slug>-resume.md` のようなファイルに書く。show-me-your-work の記録があれば、重複して書かず参照する。
 
-**Reply:** where you are in the loop, what's on disk versus still in your head (paths, no diff dumps), the commits you made and whether the tree is clean, and the first action on resume. This is a pause, not a final report.
+**返信に含める内容：** 反復のどこにいるか、ディスク上にあるものと思考の中だけにあるもの。差分全体を貼らず、パスを示す。作成したコミット、作業ツリーがクリーンかどうか、再開時の最初の操作も記す。これは一時停止であり、最終報告ではない。
