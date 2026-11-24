@@ -2,7 +2,7 @@ name: Sync upstream
 
 on:
   schedule:
-    - cron: "17 21 */3 * *" # 3日おき 06:17 JST（月末は 31日・28日→1日で間隔が縮む）
+    - cron: "17 21 */2 * *" # 2日に1回 06:17 JST（31日と閏年の2月29日は翌日の1日にも動くので、間隔が1日に縮む）
   workflow_dispatch:
 
 permissions:
