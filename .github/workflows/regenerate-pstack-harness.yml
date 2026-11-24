@@ -1,0 +1,43 @@
+name: Regenerate pstack harness
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "pstack/**"
+      - "scripts/generate-pstack-harness-trees.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# 同じブランチへ立て続けに push したら、古い実行は捨てて最新のコミットだけ再生成する。
+concurrency:
+  group: regenerate-pstack-harness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Claude Code が入れるのは harness/pstack/claude-code/ なので、pstack/ を変えたらここを作り直す。
+      - run: node scripts/generate-pstack-harness-trees.mjs
+
+      # github.token での push は次のワークフローを起動しないので、このコミットで自分自身がループすることはない。
+      - name: Commit and push
+        run: |
+          if [ -z "$(git status --porcelain -- harness/pstack)" ]; then
+            echo "harness/pstack は最新なのでコミットしない"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A harness/pstack
+          git commit -m "chore: pstack の harness ツリーを再生成"
+          git push
